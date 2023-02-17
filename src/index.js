@@ -5,10 +5,13 @@ import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import { downloadPNG } from "fxhash_lib/export";
 import {FluidController} from "./FluidController";
+import {generateColors} from "../../fxhash_lib/color";
 
 const devMode = true;
 const options = {
   numPointers: 22, // iOS limit
+  blendModePass: FXRand.int(0, 5),
+  blendModeView: FXRand.int(2, 5),
 };
 
 const effects = {
@@ -19,17 +22,27 @@ const effects = {
   scanlinesIntensity: 0.25,
   scanlinesCount: 0,
   grayscale: true,
-  dotScale: 0,
+  //dotScale: 0,
   rgbShift: 0,
 };
 
-let screenTriangle, screen;
+let screenTriangle, screen, gui;
 
 const {cam, scene, renderer} = core.init(options);
 
+const createGUI = (gui) => {
+  gui.remember(options);
+
+  const folder = gui.addFolder('Options');
+  folder.add(options, 'numPointers', 1, 22);
+  folder.add(options, 'blendModePass', 0, 5);
+  folder.add(options, 'blendModeView', 2, 5);
+}
+
 if (devMode) {
   core.initControls(cam);
-  dev.initGui();
+  gui = dev.initGui();
+  createGUI(gui);
   dev.initEffects(effects);
   dev.hideGuiSaveRow();
 }
@@ -39,15 +52,21 @@ if (devMode) {
 // Feature generation
 let features = {
   Palette: FXRand.choice(['Black&White', 'Mono', 'Analogous', 'Complementary']),
+  BlendModePass: options.blendModePass,
+  BlendModeView: options.blendModeView,
+  ColorW: FXRand.int(1, 100),
 }
 
 window.$fxhashFeatures = features;
 
+let colors = generateColors(features.Palette);
+scene.background = colors[0];
+
 const renderFrame = (event) => {
   core.update();
   dev.update();
-  FluidController.update();
-  //core.render();
+  FluidController.update(renderer, scene, cam);
+  core.render();
 }
 
 const onKeyDown = (event) => {
@@ -110,12 +129,15 @@ const addEventListeners = () => {
   }
 }
 
+scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
+
 screenTriangle = getFullscreenTriangle();
 screen = new THREE.Mesh(screenTriangle);
 screen.frustumCulled = false;
-core.scene.add(screen);
+scene.add(screen);
 
-FluidController.init(core.renderer, core.scene, core.cam, screen, options);
+FluidController.init(screen, options);
+FluidController.color = new THREE.Vector4(colors[1].r*256, colors[1].g*256, colors[1].b*256, features.ColorW);
 FluidController.resize(core.width, core.height, 1);
 FluidController.animateIn();
 

@@ -6,10 +6,7 @@ import {
 import * as materials from "fxhash_lib/materials";
 
 export class FluidController {
-    static init(renderer, scene, camera, screen, options) {
-        this.renderer = renderer;
-        this.scene = scene;
-        this.camera = camera;
+    static init(screen, options) {
         this.screen = screen;
         this.options = options;
 
@@ -195,7 +192,7 @@ export class FluidController {
         this.pointer.main.last.copy(this.pointer.main.pos);
     };
 
-    static update = () => {
+    static update = (renderer, scene, camera) => {
         if (!this.animatedIn) {
             return;
         }
@@ -229,14 +226,13 @@ export class FluidController {
         this.passMaterial.uniforms.nu.value = this.fluid.nu;
         this.passMaterial.uniforms.kappa.value = this.fluid.kappa;
         this.screen.material = this.passMaterial;
-        this.renderer.setRenderTarget(this.renderTargetB);
-        this.renderer.render(this.scene, this.camera);
+        renderer.setRenderTarget(this.renderTargetB);
+        renderer.render(scene, camera);
 
         this.viewMaterial.uniforms.tMap.value = this.renderTargetB.texture;
         this.viewMaterial.uniforms.uColor.value.copy(this.color);
         this.screen.material = this.viewMaterial;
-        this.renderer.setRenderTarget(null);
-        this.renderer.render(this.scene, this.camera);
+        renderer.setRenderTarget(null);
 
         // Swap render targets
         const renderTarget = this.renderTargetA;
