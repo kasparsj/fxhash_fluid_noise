@@ -4,12 +4,9 @@ import {getFullscreenTriangle} from "fxhash_lib/geometries";
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import { downloadPNG } from "fxhash_lib/export";
-import * as pathTracer from "fxhash_lib/pathtracer/basic";
 import {FluidController} from "./FluidController";
-// import * as pathTracer from "fxhash_lib/pathtracer/ao";
 
 const devMode = true;
-const usePathTracer = false;
 const options = {
   numPointers: 22, // iOS limit
 };
@@ -34,42 +31,23 @@ if (devMode) {
   core.initControls(cam);
   dev.initGui();
   dev.initEffects(effects);
+  dev.hideGuiSaveRow();
 }
 
-core.lookAt(new THREE.Vector3(0, 0, 0));
+//core.lookAt(new THREE.Vector3(0, 0, 0));
 
 // Feature generation
 let features = {
   Palette: FXRand.choice(['Black&White', 'Mono', 'Analogous', 'Complementary']),
-  Objects: FXRand.int(options.minObjs, options.maxObjs),
 }
-
-// features.Objects = 1;
-// includedTypes = ['Convex'];
-// features.Segments1 = 5;
-// features.Segments2 = 7;
 
 window.$fxhashFeatures = features;
-
-const createComposition = () => {
-  screenTriangle = getFullscreenTriangle();
-  screen = new THREE.Mesh(screenTriangle);
-  screen.frustumCulled = false;
-  core.scene.add(screen);
-
-  FluidController.init(core.renderer, core.scene, core.cam, screen, options);
-}
 
 const renderFrame = (event) => {
   core.update();
   dev.update();
-  if (usePathTracer) {
-    pathTracer.update();
-    pathTracer.render();
-  }
-  else {
-    core.render();
-  }
+  FluidController.update();
+  //core.render();
 }
 
 const onKeyDown = (event) => {
@@ -114,9 +92,7 @@ const onKeyDown = (event) => {
 
 const onResize = (event) => {
   core.resize(window.innerWidth, window.innerHeight);
-  if (usePathTracer) {
-    pathTracer.resize(window.innerWidth, window.innerHeight);
-  }
+  FluidController.resize(window.innerWidth, window.innerHeight, 1);
 }
 
 const onDblClick = (event) => {
@@ -134,11 +110,14 @@ const addEventListeners = () => {
   }
 }
 
-createComposition();
+screenTriangle = getFullscreenTriangle();
+screen = new THREE.Mesh(screenTriangle);
+screen.frustumCulled = false;
+core.scene.add(screen);
 
-if (usePathTracer) {
-  await pathTracer.init(screen);
-}
+FluidController.init(core.renderer, core.scene, core.cam, screen, options);
+FluidController.resize(core.width, core.height, 1);
+FluidController.animateIn();
 
 core.useEffects(effects);
 core.animate();

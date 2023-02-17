@@ -30,7 +30,6 @@ export class FluidController {
 
         this.initRenderer();
         this.initPointers();
-
         this.addListeners();
     }
 
@@ -246,11 +245,11 @@ export class FluidController {
     };
 
     static send = e => {
-        Data.Socket.send('motion', {
-            isDown: this.pointer.main.isDown,
-            x: e.x / this.width,
-            y: e.y / this.height
-        });
+        // Data.Socket.send('motion', {
+        //     isDown: this.pointer.main.isDown,
+        //     x: e.x / this.width,
+        //     y: e.y / this.height
+        // });
     };
 
     static animateIn = () => {
