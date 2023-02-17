@@ -1,13 +1,12 @@
 import {
     HalfFloatType,
-    Vector2, Vector3, Vector4,
+    Vector2, Vector4,
     WebGLRenderTarget
 } from 'three';
 import * as materials from "fxhash_lib/materials";
 
 export class FluidController {
-    static init(screen, options) {
-        this.screen = screen;
+    static init(options) {
         this.options = options;
 
         this.pointer = {};
@@ -110,23 +109,13 @@ export class FluidController {
     };
 
     static onTouchStart = e => {
-        if (!this.animatedIn) {
-            return;
-        }
-
-        if (!document.getElementsByClassName('modal').length) {
-            e.preventDefault();
-        }
+        e.preventDefault();
         this.pointer.main.isDown = true;
 
         this.onTouchMove(e);
     };
 
     static onTouchMove = e => {
-        if (!this.animatedIn) {
-            return;
-        }
-
         const event = {};
 
         if (e.changedTouches && e.changedTouches.length) {
@@ -144,10 +133,6 @@ export class FluidController {
     };
 
     static onTouchEnd = e => {
-        if (!this.animatedIn) {
-            return;
-        }
-
         this.pointer.main.isDown = false;
 
         this.onTouchMove(e);
@@ -192,11 +177,7 @@ export class FluidController {
         this.pointer.main.last.copy(this.pointer.main.pos);
     };
 
-    static update = (renderer, scene, camera) => {
-        if (!this.animatedIn) {
-            return;
-        }
-
+    static update = (mesh, renderer, scene, camera) => {
         Object.keys(this.pointer).forEach((id, i) => {
             if (id !== 'main') {
                 this.pointer[id].pos.lerp(this.pointer[id].target, 0.07);
@@ -225,13 +206,13 @@ export class FluidController {
         this.passMaterial.uniforms.K.value = this.fluid.K;
         this.passMaterial.uniforms.nu.value = this.fluid.nu;
         this.passMaterial.uniforms.kappa.value = this.fluid.kappa;
-        this.screen.material = this.passMaterial;
+        mesh.material = this.passMaterial;
         renderer.setRenderTarget(this.renderTargetB);
         renderer.render(scene, camera);
 
         this.viewMaterial.uniforms.tMap.value = this.renderTargetB.texture;
         this.viewMaterial.uniforms.uColor.value.copy(this.color);
-        this.screen.material = this.viewMaterial;
+        mesh.material = this.viewMaterial;
         renderer.setRenderTarget(null);
 
         // Swap render targets
@@ -246,9 +227,5 @@ export class FluidController {
         //     x: e.x / this.width,
         //     y: e.y / this.height
         // });
-    };
-
-    static animateIn = () => {
-        this.animatedIn = true;
     };
 }

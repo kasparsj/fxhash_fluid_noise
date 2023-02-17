@@ -40,7 +40,7 @@ const createGUI = (gui) => {
 }
 
 if (devMode) {
-  core.initControls(cam);
+  //core.initControls(cam);
   gui = dev.initGui();
   createGUI(gui);
   dev.initEffects(effects);
@@ -65,7 +65,7 @@ scene.background = colors[0];
 const renderFrame = (event) => {
   core.update();
   dev.update();
-  FluidController.update(renderer, scene, cam);
+  FluidController.update(screen, renderer, scene, cam);
   core.render();
 }
 
@@ -136,10 +136,9 @@ screen = new THREE.Mesh(screenTriangle);
 screen.frustumCulled = false;
 scene.add(screen);
 
-FluidController.init(screen, options);
+FluidController.init(options);
 FluidController.color = new THREE.Vector4(colors[1].r*256, colors[1].g*256, colors[1].b*256, features.ColorW);
 FluidController.resize(core.width, core.height, 1);
-FluidController.animateIn();
 
 core.useEffects(effects);
 core.animate();
