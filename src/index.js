@@ -10,8 +10,6 @@ import {generateColors} from "../../fxhash_lib/color";
 const devMode = true;
 const options = {
   numPointers: 22, // iOS limit
-  blendModePass: FXRand.int(0, 5),
-  blendModeView: FXRand.int(2, 5),
 };
 
 const effects = {
@@ -35,8 +33,6 @@ const createGUI = (gui) => {
 
   const folder = gui.addFolder('Options');
   folder.add(options, 'numPointers', 1, 22);
-  folder.add(options, 'blendModePass', 0, 5);
-  folder.add(options, 'blendModeView', 2, 5);
 }
 
 if (devMode) {
@@ -47,19 +43,22 @@ if (devMode) {
   dev.hideGuiSaveRow();
 }
 
-//core.lookAt(new THREE.Vector3(0, 0, 0));
+core.lookAt(new THREE.Vector3(0, 0, 0));
 
 // Feature generation
 let features = {
-  Palette: FXRand.choice(['Black&White', 'Mono', 'Analogous', 'Complementary']),
-  BlendModePass: options.blendModePass,
-  BlendModeView: options.blendModeView,
-  ColorW: FXRand.int(1, 100),
+  palette: FXRand.choice(['Black&White', 'Mono', 'Analogous', 'Complementary']),
+  blendModePass: FXRand.int(0, 5),
+  blendModeView: FXRand.int(2, 5),
+  colorW: FXRand.exp(0.1, 8),
 }
 
-window.$fxhashFeatures = features;
+console.log(features);
 
-let colors = generateColors(features.Palette);
+window.$fxhashFeatures = features;
+Object.assign(options, features);
+
+let colors = generateColors(features.palette);
 scene.background = colors[0];
 
 const renderFrame = (event) => {
@@ -137,7 +136,7 @@ screen.frustumCulled = false;
 scene.add(screen);
 
 FluidController.init(options);
-FluidController.color = new THREE.Vector4(colors[1].r*256, colors[1].g*256, colors[1].b*256, features.ColorW);
+FluidController.color = new THREE.Vector4(colors[1].r*256, colors[1].g*256, colors[1].b*256, options.colorW);
 FluidController.resize(core.width, core.height, 1);
 
 core.useEffects(effects);
