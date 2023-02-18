@@ -5,7 +5,7 @@ import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import { downloadPNG } from "fxhash_lib/export";
 import {FluidController} from "./FluidController";
-import {generateColors} from "../../fxhash_lib/color";
+import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
 
 const devMode = true;
 const options = {
@@ -51,6 +51,10 @@ let features = {
   blendModePass: FXRand.int(0, 5),
   blendModeView: FXRand.int(2, 5),
   colorW: FXRand.exp(0.1, 8),
+  dt: FXRand.num(0.1, 0.3),
+  K: FXRand.num(0.2, 0.7),
+  nu: FXRand.num(0.4, 0.6),
+  kappa: FXRand.num(0.1, 0.9),
 }
 
 console.log(features);
@@ -58,7 +62,8 @@ console.log(features);
 window.$fxhashFeatures = features;
 Object.assign(options, features);
 
-let colors = generateColors(features.palette);
+const hslPalette = generateHSLPalette(features.palette);
+const colors = hslPalette.map(hsl2Color);
 scene.background = colors[0];
 
 const renderFrame = (event) => {
@@ -114,7 +119,7 @@ const onResize = (event) => {
 }
 
 const onDblClick = (event) => {
-  if (!dev.isGui(event.target)) {
+  if (devMode && !dev.isGui(event.target)) {
     document.location.reload();
   }
 }
@@ -123,8 +128,18 @@ const addEventListeners = () => {
   document.addEventListener("keydown", onKeyDown, false);
   window.addEventListener("resize", onResize);
   window.addEventListener('renderFrame', renderFrame);
+  window.addEventListener('click', onClick)
   if (devMode) {
     window.addEventListener("dblclick", onDblClick);
+  }
+}
+
+const onClick = (event) => {
+  const color = generateColor(options.palette, hslPalette[0]);
+  FluidController.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, options.colorW);
+  for (let i=0; i<options.numPointers-1; i++) {
+    FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
+    FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
   }
 }
 
@@ -136,8 +151,8 @@ screen.frustumCulled = false;
 scene.add(screen);
 
 FluidController.init(options);
-FluidController.color = new THREE.Vector4(colors[1].r*256, colors[1].g*256, colors[1].b*256, options.colorW);
 FluidController.resize(core.width, core.height, 1);
+onClick();
 
 core.useEffects(effects);
 core.animate();

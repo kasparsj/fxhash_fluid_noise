@@ -14,10 +14,10 @@ export class FluidController {
         this.height = 1;
 
         this.fluid = {
-            dt: 0.2, //0.15,
-            K: 0.5, //0.2,
-            nu: 0.4, //0.5,
-            kappa: 0.6, //0.1
+            dt: options.dt, //0.15,
+            K: options.K, //0.2,
+            nu: options.nu, //0.5,
+            kappa: options.kappa, //0.1
         }
         //this.color = new Vector4(0, 23, 21);
         //this.color = new Vector4(1, 0, 100, 10.0); // blue-orange
@@ -72,7 +72,6 @@ export class FluidController {
         window.addEventListener('touchend', this.onTouchEnd);
         window.addEventListener('touchcancel', this.onTouchEnd);
         window.addEventListener('mouseup', this.onTouchEnd);
-        // Data.Socket.on('motion', this.onMotion);
     }
 
     /**
@@ -128,8 +127,6 @@ export class FluidController {
 
         this.pointer.main.isMove = true;
         this.pointer.main.pos.copy(event);
-
-        this.send(event);
     };
 
     static onTouchEnd = e => {
@@ -138,28 +135,32 @@ export class FluidController {
         this.onTouchMove(e);
     };
 
-    static onMotion = e => {
-        if (!this.pointer[e.id]) {
-            if (Object.keys(this.pointer).length >= this.options.numPointers) {
-                return;
-            }
-
-            this.pointer[e.id] = {};
-            this.pointer[e.id].isDown = false;
-            this.pointer[e.id].pos = new Vector2();
-            this.pointer[e.id].last = new Vector2();
-            this.pointer[e.id].delta = new Vector2();
-            this.pointer[e.id].target = new Vector2();
-            this.pointer[e.id].target.set(e.x * this.width, e.y * this.height);
-            this.pointer[e.id].pos.copy(this.pointer[e.id].target);
-            this.pointer[e.id].last.copy(this.pointer[e.id].pos);
-            // this.pointer[e.id].tracker = this.trackers.add(new Tracker());
-            // this.pointer[e.id].tracker.css({ left: Math.round(this.pointer[e.id].pos.x), top: Math.round(this.pointer[e.id].pos.y) });
-            // this.pointer[e.id].tracker.setData(Data.getUser(e.id));
+    static addPointer = (id, x, y) => {
+        if (Object.keys(this.pointer).length >= this.options.numPointers) {
+            return;
         }
 
-        this.pointer[e.id].isDown = e.isDown;
-        this.pointer[e.id].target.set(e.x * this.width, e.y * this.height);
+        this.pointer[id] = {};
+        this.pointer[id].isDown = false;
+        this.pointer[id].pos = new Vector2();
+        this.pointer[id].last = new Vector2();
+        this.pointer[id].delta = new Vector2();
+        this.pointer[id].target = new Vector2();
+        this.pointer[id].target.set(x * this.width, y * this.height);
+        this.pointer[id].pos.copy(this.pointer[id].target);
+        this.pointer[id].last.copy(this.pointer[id].pos);
+        // this.pointer[id].tracker = this.trackers.add(new Tracker());
+        // this.pointer[id].tracker.css({ left: Math.round(this.pointer[id].pos.x), top: Math.round(this.pointer[id].pos.y) });
+        // this.pointer[id].tracker.setData(Data.getUser(id));
+    }
+
+    static setPointer = (id, x, y, isDown) => {
+        if (!this.pointer[id]) {
+            this.addPointer(id, x, y);
+        }
+
+        this.pointer[id].isDown = isDown;
+        this.pointer[id].target.set(x * this.width, y * this.height);
     };
 
     /**
@@ -219,13 +220,5 @@ export class FluidController {
         const renderTarget = this.renderTargetA;
         this.renderTargetA = this.renderTargetB;
         this.renderTargetB = renderTarget;
-    };
-
-    static send = e => {
-        // Data.Socket.send('motion', {
-        //     isDown: this.pointer.main.isDown,
-        //     x: e.x / this.width,
-        //     y: e.y / this.height
-        // });
     };
 }
