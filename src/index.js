@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as FXRand from 'fxhash_lib/random.js'
-import {getFullscreenTriangle} from "fxhash_lib/geometries";
+import {createFullScreenGeom} from "fxhash_lib/geometries";
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import { downloadPNG } from "fxhash_lib/export";
@@ -37,12 +37,15 @@ const createGUI = (gui) => {
 
 if (devMode) {
   //core.initControls(cam);
-  gui = dev.initGui();
+  gui = dev.initGui('fluid');
   createGUI(gui);
   dev.initEffects(effects);
   dev.hideGuiSaveRow();
 }
 
+cam.position.x = 1024;
+cam.position.y = 512;
+cam.position.z = 1024;
 core.lookAt(new THREE.Vector3(0, 0, 0));
 
 // Feature generation
@@ -145,7 +148,7 @@ const onClick = (event) => {
 
 scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
 
-screenTriangle = getFullscreenTriangle();
+screenTriangle = createFullScreenGeom();
 screen = new THREE.Mesh(screenTriangle);
 screen.frustumCulled = false;
 scene.add(screen);
