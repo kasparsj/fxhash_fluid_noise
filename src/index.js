@@ -3,14 +3,19 @@ import {FullScreenQuad} from 'three/examples/jsm/postprocessing/Pass.js';
 import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
-import { downloadPNG } from "fxhash_lib/export";
 import {FluidController} from "./FluidController";
 import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
 
+const name = 'fluid';
 const devMode = true;
 const options = {
+  name,
   numPointers: 22, // iOS limit
 };
+
+const settings = {};
+
+const lightOptions = {};
 
 const effects = {
   enabled: true,
@@ -25,10 +30,6 @@ const effects = {
   rgbShift: 0,
 };
 
-let screen, gui;
-
-const {cam, scene, renderer} = core.init(options);
-
 const createGUI = (gui) => {
   gui.remember(options);
 
@@ -37,9 +38,15 @@ const createGUI = (gui) => {
 }
 
 if (devMode) {
+  dev.initGui(name);
+  createGUI(dev.gui);
+}
+
+let screen;
+const {cam, scene, renderer} = core.init(settings);
+
+if (devMode) {
   //core.initControls(cam);
-  gui = dev.initGui('fluid');
-  createGUI(gui);
   dev.initEffects(effects);
   dev.hideGuiSaveRow();
 }
@@ -78,42 +85,8 @@ const renderFrame = (event) => {
 }
 
 const onKeyDown = (event) => {
-  const k = event.which;
-  // console.log(k);
-  if (event.shiftKey) {
-    switch (k) {
-      default:
-        dev.shiftKeyCommand(event, options);
-        break;
-    }
-  }
-  else if (event.ctrlKey || event.metaKey) {
-    switch (k) {
-      case 83: // s
-        event.preventDefault();
-        downloadPNG("snapshot" + (new Date().getTime()));
-        break;
-      default:
-        dev.metaKeyCommand(event, options);
-        break;
-    }
-  }
-  else {
-    switch (k) {
-      case 32: // space
-        core.togglePaused();
-        break;
-    }
-    if (devMode) {
-      switch (k) {
-        case 82: // r
-          renderFrame();
-          break;
-        default:
-          dev.keyCommand(k, options)
-          break;
-      }
-    }
+  if (devMode) {
+    dev.keyDown(event, settings, options, lightOptions, effects);
   }
 }
 
