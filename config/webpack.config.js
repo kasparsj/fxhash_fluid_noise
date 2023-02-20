@@ -25,6 +25,11 @@ module.exports = {
       }
     ],
   },
+  resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three')
+    },
+  },
   plugins: [
     new HtmlWebpackPlugin({
       template: "./public/index.html",
