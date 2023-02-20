@@ -2,7 +2,7 @@ import {Vector2} from "three";
 
 export class FluidPointer
 {
-    constructor(x, y) {
+    constructor(x, y, speed) {
         this.isMove = false;
         this.isDown = false;
 
@@ -16,10 +16,11 @@ export class FluidPointer
         this.target.copy(this.start);
         this.pos.copy(this.target);
         this.last.copy(this.pos);
+        this.speed = speed || 0.07;
+    }
 
-        // this.tracker = this.trackers.add(new Tracker());
-        // this.tracker.css({ left: Math.round(this.pos.x), top: Math.round(this.pos.y) });
-        // this.tracker.setData(Data.getUser(id));
+    update() {
+        this.pos.lerp(this.target, this.speed);
     }
 
     reset() {
