@@ -3,7 +3,7 @@ import {
     Vector2, Vector4,
     WebGLRenderTarget
 } from 'three';
-import * as materials from "fxhash_lib/materials";
+import * as mats from "fxhash_lib/materials";
 
 export class FluidController {
     static init(options) {
@@ -39,9 +39,12 @@ export class FluidController {
         this.renderTargetA.texture.generateMipmaps = false;
         this.renderTargetB = this.renderTargetA.clone();
 
-        // Fluid materials
-        this.passMaterial = materials.fluidPass(this.options);
-        this.viewMaterial = materials.fluidView(this.options);
+        this.passMaterial = mats.fluidPass({
+            blending: this.options.blendModePass,
+        }, this.options);
+        this.viewMaterial = mats.fluidView({
+            blending: this.options.blendModeView,
+        }, this.options);
     }
 
     static initPointers() {
