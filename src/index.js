@@ -24,7 +24,8 @@ const options = {
   K: 0.2,
   nu: 0.5,
   kappa: 0.1,
-  // speed: 0.01,
+  minSpeed: 0.0001,
+  maxSpeed: 0.01,
 };
 
 const lightOptions = {};
@@ -56,7 +57,8 @@ const createGUI = (gui) => {
   folder.add(options, 'K', 0, 1, 0.01).listen();
   folder.add(options, 'nu', 0, 1, 0.01).listen();
   folder.add(options, 'kappa', 0, 1, 0.01).listen();
-  // folder.add(options, 'speed', 0, 0.1, 0.001).listen();
+  folder.add(options, 'minSpeed', 0.0001, 0.01, 0.0001).listen();
+  folder.add(options, 'maxSpeed', 0.01, 0.1, 0.0001).listen();
 }
 
 if (devMode) {
@@ -158,7 +160,7 @@ const createLayer = () => {
   }));
   layers[i].resize(core.width, core.height, 1);
   for (let j=0; j<numPointers; j++) {
-    const speed = FXRand.num(0.001, 0.1);
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed);
     const isDown = FXRand.bool();
     layers[i].addPointer(FXRand.num(), FXRand.num(), speed, isDown);
     layers[i].setPointer(j, FXRand.num(), FXRand.num(), speed, isDown);
@@ -170,7 +172,7 @@ const createLayer = () => {
 const resetLayer = (layer) => {
   layer.initRenderer();
   for (let j=0; j<layer.pointers.length; j++) {
-    const speed = FXRand.num(0.001, 0.1);
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed);
     layer.pointers[j].speed = speed;
     layer.pointers[j].reset();
   }
