@@ -1,6 +1,6 @@
 import * as THREE from 'three';
+import {FullScreenQuad} from 'three/examples/jsm/postprocessing/Pass.js';
 import * as FXRand from 'fxhash_lib/random.js'
-import {createFullScreenGeom} from "fxhash_lib/geometries";
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import { downloadPNG } from "fxhash_lib/export";
@@ -20,11 +20,12 @@ const effects = {
   scanlinesIntensity: 0.25,
   scanlinesCount: 0,
   grayscale: true,
-  //dotScale: 0,
+  dotScreen: false,
+  dotScale: 0,
   rgbShift: 0,
 };
 
-let screenTriangle, screen, gui;
+let screen, gui;
 
 const {cam, scene, renderer} = core.init(options);
 
@@ -131,7 +132,7 @@ const addEventListeners = () => {
   document.addEventListener("keydown", onKeyDown, false);
   window.addEventListener("resize", onResize);
   window.addEventListener('renderFrame', renderFrame);
-  window.addEventListener('click', onClick)
+  //window.addEventListener('click', onClick)
   if (devMode) {
     window.addEventListener("dblclick", onDblClick);
   }
@@ -148,8 +149,7 @@ const onClick = (event) => {
 
 scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
 
-screenTriangle = createFullScreenGeom();
-screen = new THREE.Mesh(screenTriangle);
+screen = (new FullScreenQuad()._mesh);
 screen.frustumCulled = false;
 scene.add(screen);
 
