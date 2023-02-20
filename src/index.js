@@ -15,6 +15,13 @@ const settings = {
 
 const options = {
   numPointers: 22, // iOS limit
+  blendModePass: 0,
+  blendModeView: 2,
+  dt: 0.15,
+  K: 0.2,
+  nu: 0.5,
+  kappa: 0.1,
+  speed: 0.01,
 };
 
 const lightOptions = {};
@@ -37,6 +44,13 @@ const createGUI = (gui) => {
 
   const folder = gui.addFolder('Options');
   folder.add(options, 'numPointers', 1, 22);
+  folder.add(options, 'blendModePass', 0, 5, 1).listen();
+  folder.add(options, 'blendModeView', 2, 5, 1).listen();
+  folder.add(options, 'dt', 0, 1, 0.01).listen();
+  folder.add(options, 'K', 0, 1, 0.01).listen();
+  folder.add(options, 'nu', 0, 1, 0.01).listen();
+  folder.add(options, 'kappa', 0, 1, 0.01).listen();
+  folder.add(options, 'speed', 0, 0.1, 0.001);
 }
 
 if (devMode) {
@@ -69,8 +83,6 @@ let features = {
   nu: FXRand.num(0.4, 0.6),
   kappa: FXRand.num(0.1, 0.9),
 }
-
-console.log(features);
 
 window.$fxhashFeatures = features;
 Object.assign(options, features);
@@ -107,29 +119,42 @@ const addEventListeners = () => {
   document.addEventListener("keydown", onKeyDown, false);
   window.addEventListener("resize", onResize);
   window.addEventListener('renderFrame', renderFrame);
-  //window.addEventListener('click', onClick)
+  renderer.domElement.addEventListener('click', onClick);
   if (devMode) {
     window.addEventListener("dblclick", onDblClick);
   }
 }
 
-const onClick = (event) => {
-  const color = generateColor(options.palette, hslPalette[0]);
-  FluidController.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, options.colorW);
-  for (let i=0; i<options.numPointers-1; i++) {
-    FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
-    FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
+const createScreen = (remove = true) => {
+  if (remove && screen) {
+    scene.remove(screen);
   }
+  screen = (new FullScreenQuad()._mesh);
+  screen.frustumCulled = false;
+  scene.add(screen);
+}
+
+FluidController.init(options);
+FluidController.resize(core.width, core.height, 1);
+for (let i=0; i<options.numPointers-1; i++) {
+  FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
+  FluidController.setPointer('test' + i, FXRand.num(), FXRand.num(), FXRand.bool());
+}
+createScreen();
+
+const onClick = (event) => {
+  FluidController.initRenderer();
+  FluidController.setOptions(options);
+  for (let i=0; i<options.numPointers-1; i++) {
+    FluidController.pointers['test' + i].reset();
+  }
+  //const color = generateColor(options.palette, hslPalette[0]);
+  const color = colors[1];
+  FluidController.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, options.colorW);
 }
 
 scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
 
-screen = (new FullScreenQuad()._mesh);
-screen.frustumCulled = false;
-scene.add(screen);
-
-FluidController.init(options);
-FluidController.resize(core.width, core.height, 1);
 onClick();
 
 core.useEffects(effects);
