@@ -8,12 +8,14 @@ import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/col
 
 const name = 'fluid';
 const devMode = true;
-const options = {
+
+const settings = {
   name,
-  numPointers: 22, // iOS limit
 };
 
-const settings = {};
+const options = {
+  numPointers: 22, // iOS limit
+};
 
 const lightOptions = {};
 
@@ -86,7 +88,7 @@ const renderFrame = (event) => {
 
 const onKeyDown = (event) => {
   if (devMode) {
-    dev.keyDown(event, settings, options, lightOptions, effects);
+    dev.keyDown(event, settings, lightOptions, effects);
   }
 }
 
