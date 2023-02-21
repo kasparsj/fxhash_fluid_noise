@@ -18,17 +18,37 @@ const options = {
   maxLayers: 3,
   minPointers: 11,
   maxPointers: 22, // iOS limit
-  blendModePass: 0,
-  blendModeView: 2,
-  dt: 0.15,
-  K: 0.2,
-  nu: 0.5,
-  kappa: 0.1,
-  minSpeed: 0.0001,
+  minSpeed: 0.001,
   maxSpeed: 0.01,
+  speedMult: 0.1,
 };
 
-const lightOptions = {};
+const palettes = {
+  'Black&White': true,
+  'Mono': true,
+  'Analogous': true,
+  'Complementary': true,
+};
+
+const layerOptions = [];
+
+const lightOptions = {
+  ambLight: true,
+  ambColor: 0x404040,
+  ambIntensity: 0.1,
+  camLight: true,
+  camLightColor: 0xFFFFFF,
+  camLightIntensity: 0.5,
+  sunLight: true,
+  sunLightColor: 0xFFFFFF,
+  sunLightIntensity: 0.7,
+  sunElevation: 45,
+  sunAzimuth: 90,
+  hemiLight: true,
+  hemiSkyColor: 0x3284ff,
+  hemiGroundColor: 0xffffff,
+  hemiIntensity: 0.6,
+};
 
 const effects = {
   enabled: true,
@@ -51,14 +71,33 @@ const createGUI = (gui) => {
   folder.add(options, 'maxLayers', 1, 5, 1);
   folder.add(options, 'minPointers', 1, 22, 1);
   folder.add(options, 'maxPointers', 1, 22, 1);
-  folder.add(options, 'blendModePass', 0, 5, 1).listen();
-  folder.add(options, 'blendModeView', 2, 5, 1).listen();
-  folder.add(options, 'dt', 0, 1, 0.01).listen();
-  folder.add(options, 'K', 0, 1, 0.01).listen();
-  folder.add(options, 'nu', 0, 1, 0.01).listen();
-  folder.add(options, 'kappa', 0, 1, 0.01).listen();
-  folder.add(options, 'minSpeed', 0.0001, 0.01, 0.0001).listen();
-  folder.add(options, 'maxSpeed', 0.01, 0.1, 0.0001).listen();
+  folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
+  folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
+
+  createColorGui(gui);
+}
+
+const createColorGui = (gui) => {
+  gui.remember(palettes);
+
+  const folder = gui.addFolder('Colors');
+  for (let p in palettes) {
+    folder.add(palettes, p);
+  }
+}
+
+const createLayerGui = (gui, i) => {
+  const folder = gui.addFolder('Layer '+i);
+  const updateLayer = () => {
+    layers[i].setOptions(layerOptions[i]);
+    layers[i].initRenderer();
+  }
+  folder.add(layerOptions[i], 'blendModePass', 0, 5, 1).listen().onChange(updateLayer);
+  folder.add(layerOptions[i], 'blendModeView', 2, 5, 1).listen().onChange(updateLayer);
+  folder.add(layerOptions[i], 'dt', 0, 1, 0.01).listen().onChange(updateLayer);
+  folder.add(layerOptions[i], 'K', 0, 1, 0.01).listen().onChange(updateLayer);
+  folder.add(layerOptions[i], 'nu', 0, 1, 0.01).listen().onChange(updateLayer);
+  folder.add(layerOptions[i], 'kappa', 0, 1, 0.01).listen().onChange(updateLayer);
 }
 
 if (devMode) {
@@ -66,12 +105,17 @@ if (devMode) {
   createGUI(dev.gui);
 }
 
+const {cam, scene, renderer} = core.init(settings);
+//const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
+let includedPalettes = Object.keys(palettes).filter((palette) => {
+  return palettes[palette] === true;
+});
 const layers = [];
 const screens = [];
-const {cam, scene, renderer} = core.init(settings);
 
 if (devMode) {
   //core.initControls(cam);
+  //dev.initLighting(lightOptions);
   dev.initEffects(effects);
   dev.hideGuiSaveRow();
 }
@@ -81,31 +125,145 @@ cam.position.y = 512;
 cam.position.z = 1024;
 core.lookAt(new THREE.Vector3(0, 0, 0));
 
-const generateOptions = () => {
-  return {
-    blendModePass: FXRand.int(0, 5),
-    blendModeView: FXRand.int(2, 5),
-    colorW: FXRand.exp(0.1, 8),
-    dt: FXRand.num(0.1, 0.3),
-    K: FXRand.num(0.2, 0.7),
-    nu: FXRand.num(0.4, 0.6),
-    kappa: FXRand.num(0.1, 0.9),
-  };
-}
-
 // Feature generation
 let features = {
-  palette: FXRand.choice(['Black&White', 'Mono', 'Analogous', 'Complementary']),
+  palette: FXRand.choice(includedPalettes),
   layers: FXRand.int(options.minLayers, options.maxLayers),
+  colorW: FXRand.exp(0.1, 8),
 }
-Object.assign(features, generateOptions());
+Object.assign(features, layerOptions[0]);
 
 window.$fxhashFeatures = features;
-Object.assign(options, features);
 
 const hslPalette = generateHSLPalette(features.palette);
 const colors = hslPalette.map(hsl2Color);
 scene.background = colors[0];
+
+const validateOptions = (options, i) => {
+  const invalidBlends = ['4-4'];
+  const blendModeString = options.blendModePass+'-'+options.blendModeView;
+  if (invalidBlends.indexOf(blendModeString) > -1) {
+    return false;
+  }
+  if (i > 0 && [2, 4].indexOf(options.blendModeView) > -1 && options.blendModeView === layerOptions[i-1].blendModeView) {
+    return false;
+  }
+  if (features.palette === 'Black&White') {
+    const invalidBWBlends = ['1-2'];
+    if (invalidBWBlends.indexOf(blendModeString) > -1) {
+      return false;
+    }
+    if (hslPalette[0][2] < 0.5) {
+      if (blendModeString === '0-4' && options.dt < 0.5) {
+        return false;
+      }
+      if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
+        return false;
+      }
+      if (['2-3', '3-2', '3-3', '4-3'].indexOf(blendModeString) > -1) {
+        return false;
+      }
+    }
+    else {
+      if (blendModeString === '0-2') {
+        return false;
+      }
+      if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.45) {
+        return false;
+      }
+      if (blendModeString === '2-3' && options.dt < 0.8) {
+        return false;
+      }
+    }
+    if (blendModeString === '0-5' && options.dt < 0.25) {
+      return false;
+    }
+    if (['1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
+      return false;
+    }
+    if (blendModeString === '2-4' && options.dt < 0.7) {
+      return false;
+    }
+    if (['4-2', '4-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
+      return false;
+    }
+  }
+  else if (features.palette === 'Mono') {
+    if (i > 0 && ['2-3', '2-5'].indexOf(blendModeString) > -1) {
+      return false;
+    }
+    if (blendModeString === '3-2' && options.dt < 0.7) {
+      return false;
+    }
+  }
+  else if (features.palette === 'Analogous') {
+    if (['2-5'].indexOf(blendModeString) > -1) {
+      return false;
+    }
+    if (i > 0 && ['1-4', '2-2', '3-2'].indexOf(blendModeString) > -1) {
+      return false;
+    }
+    if (['0-3', '0-5', '1-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
+      return false;
+    }
+    if (['1-2', '1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
+      return false;
+    }
+    if (['2-3', '3-2', '4-2', '4-3'].indexOf(blendModeString) > -1 && options.dt < 0.6) {
+      return false;
+    }
+    if (['2-4'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
+      return false;
+    }
+    if (blendModeString === '4-5' && options.dt < 0.5) {
+      return false;
+    }
+  }
+  if (blendModeString === '0-4' && options.dt < 0.3) {
+    return false;
+  }
+  if (blendModeString === '1-5' && options.dt < 0.3) {
+    return false;
+  }
+  if (blendModeString === '2-2' && options.dt < 0.8) {
+    return false;
+  }
+  if (blendModeString === '2-4' && options.dt < 0.5) {
+    return false;
+  }
+  if (blendModeString === '3-2' && options.dt < 0.4) {
+    return false;
+  }
+  if (blendModeString === '3-3' && options.dt < 0.45) {
+    return false;
+  }
+  return true;
+}
+
+const generateOptions = (i) => {
+  const minDt = [0.25, 0.25, 0.4, 0.1, 0.3, 0.1];
+  let opts;
+  do {
+    const blendModePass = FXRand.int(0, i > 0 ? 4 : 5);
+    const blendModeView = FXRand.int(2, blendModePass === 3 ? 3 : 5);
+    opts = {
+      blendModePass,
+      blendModeView,
+      dt: FXRand.num(minDt[blendModePass], 1.0),
+      K: FXRand.num(0.2, 0.7),
+      nu: FXRand.num(0.4, 0.6),
+      kappa: FXRand.num(0.1, 0.9),
+    };
+  } while (!validateOptions(opts, i));
+  return opts;
+}
+
+for (let i=0; i<options.maxLayers; i++) {
+  layerOptions.push(generateOptions(i));
+  if (devMode) {
+    createLayerGui(dev.gui, i);
+  }
+}
 
 const renderFrame = (event) => {
   core.update();
@@ -154,13 +312,12 @@ const createScreen = () => {
 const createLayer = () => {
   const i = layers.length;
   const numPointers = FXRand.int(options.minPointers, options.maxPointers);
-  const defaultOptions = i === 0 ? options : generateOptions();
-  layers[i] = new FluidController(Object.assign({}, defaultOptions, {
+  layers[i] = new FluidController(Object.assign({}, layerOptions[i], {
     numPointers,
   }));
   layers[i].resize(core.width, core.height, 1);
   for (let j=0; j<numPointers; j++) {
-    const speed = FXRand.num(options.minSpeed, options.maxSpeed);
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     const isDown = FXRand.bool();
     layers[i].addPointer(FXRand.num(), FXRand.num(), speed, isDown);
     layers[i].setPointer(j, FXRand.num(), FXRand.num(), speed, isDown);
@@ -172,20 +329,22 @@ const createLayer = () => {
 const resetLayer = (layer) => {
   layer.initRenderer();
   for (let j=0; j<layer.pointers.length; j++) {
-    const speed = FXRand.num(options.minSpeed, options.maxSpeed);
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     layer.pointers[j].speed = speed;
     layer.pointers[j].reset();
   }
   // const color = generateColor(options.palette, hslPalette[0]);
   const color = colors[1];
-  layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, options.colorW);
+  layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
 }
 
 const onClick = (event) => {
   for (let i=0; i<layers.length; i++) {
     if (event) {
-      const opts = i === 0 ? options : generateOptions();
-      layers[i].setOptions(opts);
+      if (i > 0) {
+        Object.assign(layerOptions[i], generateOptions(i));
+      }
+      layers[i].setOptions(layerOptions[i]);
     }
     resetLayer(layers[i]);
   }
@@ -195,6 +354,9 @@ const onClick = (event) => {
 
 for (let i=0; i<features.layers; i++) {
   createLayer();
+}
+for (let i=features.layers; i<options.maxLayers; i++) {
+  dev.gui.removeFolder(dev.gui.getFolder('Layer '+i));
 }
 onClick();
 
