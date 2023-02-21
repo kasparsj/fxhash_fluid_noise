@@ -124,7 +124,10 @@ export class FluidLayer {
         if (this.strokes.length >= this.options.numStrokes) {
             return false;
         }
+        const i = this.strokes.length;
         this.strokes.push(stroke);
+        this.passMaterial.uniforms.uMouse.value[i].set(stroke.pos.x, stroke.pos.y);
+        this.passMaterial.uniforms.uLast.value[i].set(stroke.pos.x, stroke.pos.y);
         return true;
     }
 

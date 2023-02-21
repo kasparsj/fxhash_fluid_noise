@@ -26,13 +26,13 @@ const options = {
   speedMult: 1,
   strokesRel: 'mirrorRand',
   maxCells: 10,
-  onClick: 'resetLayers',
-  onReset: '',
 };
 
 const compositions = {
-  test: false,
   cells: true,
+  regenerate: false,
+  reset: false,
+  addnew: false,
 };
 
 const palettes = {
@@ -87,6 +87,7 @@ const createGUI = (gui) => {
   folder.add(options, 'maxCells', 5, 20, 1);
   folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
   folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
+  folder.add(options, 'speedMult', 0.1, 10, 0.1).listen();
   folder.add(options, 'maxIterations', 1, 20, 1);
 
   dev.createCheckBoxGui(compositions, 'Compositions');
@@ -134,6 +135,7 @@ const histPingPong = new RenderPingPong(core.width, core.height, {
   stencilBuffer: false,
   generateMipmaps: false,
 });
+let histMesh;
 const labels = new THREE.Group();
 
 if (devMode) {
@@ -375,7 +377,6 @@ const createStrokes = (layer, i) => {
   }
 }
 
-let histMesh;
 const renderToHist = () => {
   histPingPong.render(renderer, scene, cam);
   histPingPong.swap();
@@ -397,34 +398,25 @@ const renderToHist = () => {
 }
 
 const resetLayer = (layer) => {
-  // layer.initRenderer();
-  layer.renderPingPong.swap();
+  layer.initRenderer();
+  regenerateLayer(layer);
   for (let j=0; j<layer.strokes.length; j++) {
-    if (options.strokesRel === 'random' && options.onReset === 'randomSpeed') {
-      const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-      layer.strokes[j].speed = speed;
-    }
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
+    layer.strokes[j].speed = speed;
     layer.strokes[j].reset();
   }
-  // const color = generateColor(options.palette, hslPalette[0]);
-  // setLayerColor(layer, color);
+  const color = generateColor(options.palette, hslPalette[0]);
+  setLayerColor(layer, color);
 }
 
 const setLayerColor = (layer, color) => {
   layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
 }
 
-const regenerateLayers = () => {
-  for (let i=0; i<layers.length; i++) {
-   Object.assign(layerOptions[i], generateOptions(i));
-    layers[i].setOptions(layerOptions[i]);
-  }
-}
-
-const resetLayers = () => {
-  for (let i=0; i<layers.length; i++) {
-    resetLayer(layers[i]);
-  }
+const regenerateLayer = (layer) => {
+  const i = layers.indexOf(layer);
+  Object.assign(layerOptions[i], generateOptions(i));
+  layer.setOptions(layerOptions[i]);
 }
 
 const addLayer = (numStrokes) => {
@@ -438,24 +430,35 @@ const addLayer = (numStrokes) => {
 }
 
 const onClick = (event) => {
-  // switch (options.onClick) {
-  //   case 'addLayer':
-  //     addLayer(strokesPerLayer);
-  //     break;
-  //   case 'resetLayers':
-  //   default:
-  //     regenerateLayers();
-  //     resetLayers();
-  //     break
-  // }
-  createCell();
+  switch (composition) {
+    case 'addnew':
+      addLayer(strokesPerLayer);
+      break;
+    case 'reset':
+      layers.map((layer) => {
+        resetLayer(layer);
+      });
+      break
+    case 'regenerate':
+      layers.map((layer) => {
+        layer.renderPingPong.swap();
+        regenerateLayer(layer);
+      });
+      break;
+    case 'cells':
+    default:
+      createCell();
+      break
+  }
 }
 
 let numCells = 0;
 const doCreateCell = () => {
   numCells++;
   renderToHist();
-  regenerateLayers();
+  layers.map((layer) => {
+    regenerateLayer(layer);
+  });
 }
 
 let timeoutID = -1;
@@ -475,10 +478,7 @@ for (let i=0; i<features.layers; i++) {
   addLayer(strokesPerLayer);
 }
 switch (composition) {
-  case 'test':
-    break;
   case 'cells':
-  default:
     createCell();
     break;
 }
