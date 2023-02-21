@@ -3,6 +3,7 @@ import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as mats from "fxhash_lib/materials";
+import {RenderPingPong} from "fxhash_lib/RenderPingPong";
 import {FluidLayer} from "./FluidLayer";
 import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
 import {FluidStroke} from "./FluidStroke";
@@ -118,6 +119,16 @@ let includedPalettes = Object.keys(palettes).filter((palette) => {
 });
 const layers = [];
 const strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
+const histPingPong = new RenderPingPong(core.width, core.height, {
+  minFilter: THREE.LinearFilter,
+  magFilter: THREE.LinearFilter,
+  format: THREE.RGBAFormat,
+  type: THREE.FloatType,
+  depthBuffer: false,
+  stencilBuffer: false
+});
+histPingPong.targetA.texture.generateMipmaps = false;
+histPingPong.targetB.texture.generateMipmaps = false;
 const labels = new THREE.Group();
 
 if (devMode) {
@@ -351,6 +362,28 @@ const createStrokes = (layer, i) => {
   }
 }
 
+// let histMesh;
+const renderToHist = () => {
+  histPingPong.render(renderer, scene, cam);
+
+  // if (histMesh) {
+  //   histMesh.material.uniforms.map.value = histPingPong.targetB.texture;
+  //   histMesh.material.needsUpdate = true;
+  // }
+  // else {
+  //   histMesh = FluidLayer.createMesh();
+  //   histMesh.material = mats.fullScreenMap({}, {
+  //     map: histTargetB.texture,
+  //     blending: THREE.NormalBlending,
+  //     transparent: true,
+  //   });
+  //   scene.add(histMesh);
+  // }
+  scene.background = histPingPong.targetB.texture;
+
+  histPingPong.swap();
+}
+
 const resetLayer = (layer) => {
   // layer.initRenderer();
   layer.swapRenderTargets();
@@ -387,15 +420,16 @@ const addLayer = (numStrokes) => {
 }
 
 const onClick = (event) => {
-  switch (options.onClick) {
-    case 'addLayer':
-      addLayer(strokesPerLayer);
-      break;
-    case 'resetLayers':
-    default:
-      resetLayers(event);
-      break
-  }
+  // switch (options.onClick) {
+  //   case 'addLayer':
+  //     addLayer(strokesPerLayer);
+  //     break;
+  //   case 'resetLayers':
+  //   default:
+  //     resetLayers(event);
+  //     break
+  // }
+  renderToHist();
 }
 
 //scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));

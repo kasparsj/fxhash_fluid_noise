@@ -3,11 +3,11 @@
 import {
     HalfFloatType,
     Vector2, Vector4,
-    WebGLRenderTarget
 } from 'three';
 import * as mats from "fxhash_lib/materials";
 import {FluidStroke} from "./FluidStroke";
 import {FullScreenQuad} from 'three/examples/jsm/postprocessing/Pass.js';
+import {RenderPingPong} from "../../fxhash_lib/RenderPingPong";
 
 export class FluidLayer {
     constructor(options) {
@@ -49,14 +49,13 @@ export class FluidLayer {
     }
 
     initRenderer() {
-        // Render targets
-        this.renderTargetA = new WebGLRenderTarget(this.width, this.height, {
+        this.renderPingPong = new RenderPingPong(this.width, this.height, {
             type: HalfFloatType,
             depthBuffer: false,
             stencilBuffer: false
         });
-        this.renderTargetA.texture.generateMipmaps = false;
-        this.renderTargetB = this.renderTargetA.clone();
+        this.renderPingPong.targetA.texture.generateMipmaps = false;
+        this.renderPingPong.targetB.texture.generateMipmaps = false;
 
         this.passMaterial = mats.fluidPass({
             blending: this.options.blendModePass,
@@ -132,8 +131,7 @@ export class FluidLayer {
         this.width = width;
         this.height = height;
 
-        this.renderTargetA.setSize(width * dpr, height * dpr);
-        this.renderTargetB.setSize(width * dpr, height * dpr);
+        this.renderPingPong.setSize(width * dpr, height * dpr);
 
         if (this.mouseStroke) {
             this.mouseStroke.pos.set(0.5, 0.5);
@@ -147,7 +145,7 @@ export class FluidLayer {
         }
         // todo: mousePointer not working!
 
-        this.passMaterial.uniforms.tMap.value = this.renderTargetA.texture;
+        this.passMaterial.uniforms.tMap.value = this.renderPingPong.targetA.texture;
         this.passMaterial.uniforms.dt.value = this.fluid.dt;
         this.passMaterial.uniforms.K.value = this.fluid.K;
         this.passMaterial.uniforms.nu.value = this.fluid.nu;
@@ -155,22 +153,14 @@ export class FluidLayer {
 
         mesh = mesh || this.mesh;
         mesh.material = this.passMaterial;
-        renderer.setRenderTarget(this.renderTargetB);
-        renderer.render(scene, camera);
+        this.renderPingPong.render(renderer, scene, camera);
 
-        this.viewMaterial.uniforms.tMap.value = this.renderTargetB.texture;
+        this.viewMaterial.uniforms.tMap.value = this.renderPingPong.targetB.texture;
         this.viewMaterial.uniforms.uColor.value.copy(this.color);
         mesh.material = this.viewMaterial;
-        renderer.setRenderTarget(null);
 
-        this.swapRenderTargets();
+        this.renderPingPong.swap();
     };
-
-    swapRenderTargets = () => {
-        const renderTarget = this.renderTargetA;
-        this.renderTargetA = this.renderTargetB;
-        this.renderTargetB = renderTarget;
-    }
 
     updateStroke = (i) => {
         const stroke = this.strokes[i];
