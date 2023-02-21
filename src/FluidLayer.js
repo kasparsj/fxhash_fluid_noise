@@ -58,9 +58,11 @@ export class FluidLayer {
 
         this.passMaterial = mats.fluidPass({
             blending: this.options.blendModePass,
+            transparent: this.options.transparent,
         }, this.options);
         this.viewMaterial = mats.fluidView({
             blending: this.options.blendModeView,
+            transparent: this.options.transparent,
         }, this.options);
 
         this.initUniforms();

@@ -20,12 +20,19 @@ const options = {
   maxLayers: 3,
   minStrokes: 1,
   maxStrokes: 2, // iOS can do max 22
+  maxIterations: 10,
   minSpeed: 0.001,
   maxSpeed: 0.01,
   speedMult: 1,
   strokesRel: 'mirrorRand',
+  maxCells: 10,
   onClick: 'resetLayers',
   onReset: '',
+};
+
+const compositions = {
+  test: false,
+  cells: true,
 };
 
 const palettes = {
@@ -77,19 +84,13 @@ const createGUI = (gui) => {
   folder.add(options, 'minStrokes', 1, 22, 1);
   folder.add(options, 'maxStrokes', 1, 22, 1);
   folder.add(options, 'strokesRel', ['same', 'mirror', 'mirrorX', 'mirrorY', 'mirrorRand', 'random']);
+  folder.add(options, 'maxCells', 5, 20, 1);
   folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
   folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
+  folder.add(options, 'maxIterations', 1, 20, 1);
 
-  createColorGui(gui);
-}
-
-const createColorGui = (gui) => {
-  gui.remember(palettes);
-
-  const folder = gui.addFolder('Colors');
-  for (let p in palettes) {
-    folder.add(palettes, p);
-  }
+  dev.createCheckBoxGui(compositions, 'Compositions');
+  dev.createCheckBoxGui(palettes, 'Palettes');
 }
 
 const createLayerGui = (gui, i) => {
@@ -111,10 +112,17 @@ if (devMode) {
   createGUI(dev.gui);
 }
 
-const {cam, scene, renderer} = core.init(settings);
+const includedComps = Object.keys(compositions).filter((comp) => {
+  return compositions[comp] === true;
+});
+const composition = FXRand.choice(includedComps);
+
+const {cam, scene, renderer} = core.init(Object.assign({}, settings, {
+  alpha: composition === 'cells',
+}));
 //const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
 const labelRenderer = core.initCSS2DRenderer();
-let includedPalettes = Object.keys(palettes).filter((palette) => {
+const includedPalettes = Object.keys(palettes).filter((palette) => {
   return palettes[palette] === true;
 });
 const layers = [];
@@ -122,8 +130,6 @@ const strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
 const histPingPong = new RenderPingPong(core.width, core.height, {
   minFilter: THREE.LinearFilter,
   magFilter: THREE.LinearFilter,
-  format: THREE.RGBAFormat,
-  type: THREE.FloatType,
   depthBuffer: false,
   stencilBuffer: false,
   generateMipmaps: false,
@@ -155,9 +161,12 @@ window.$fxhashFeatures = features;
 
 const hslPalette = generateHSLPalette(features.palette);
 const colors = hslPalette.map(hsl2Color);
-scene.background = colors[0];
+if (composition !== 'cells') {
+  scene.background = colors[0];
+}
 
 const validateOptions = (options, i) => {
+  return true;
   const invalidBlends = ['4-4'];
   const blendModeString = options.blendModePass+'-'+options.blendModeView;
   if (invalidBlends.indexOf(blendModeString) > -1) {
@@ -263,7 +272,8 @@ const generateOptions = (i) => {
   let opts;
   do {
     const blendModePass = FXRand.int(0, i > 0 ? 4 : 5);
-    const blendModeView = FXRand.int(2, blendModePass === 3 ? 3 : 5);
+    //const blendModeView = FXRand.int(2, blendModePass === 3 ? 3 : 5);
+    const blendModeView = 2;
     opts = {
       blendModePass,
       blendModeView,
@@ -281,8 +291,8 @@ const renderFrame = (event) => {
   dev.update();
   for (let i=0; i<layers.length; i++) {
     if (layers[i].mesh.visible) {
-    layers[i].update(renderer, scene, cam);
-  }
+      layers[i].update(renderer, scene, cam);
+    }
   }
   core.render();
 }
@@ -320,7 +330,11 @@ const createLayer = (numStrokes) => {
   const i = layers.length;
   layers[i] = new FluidLayer(Object.assign({}, layerOptions[i], {
     numStrokes,
+    maxIterations: options.maxIterations,
+    bgColor: colors[0],
+    transparent: composition === 'cells',
   }));
+  setLayerColor(layers[i], colors[1]);
   layers[i].resize(core.width, core.height, 1);
   const mesh = layers[i].initMesh();
   scene.add(mesh);
@@ -361,25 +375,25 @@ const createStrokes = (layer, i) => {
   }
 }
 
-// let histMesh;
+let histMesh;
 const renderToHist = () => {
   histPingPong.render(renderer, scene, cam);
   histPingPong.swap();
 
-  // if (histMesh) {
-  //   histMesh.material.uniforms.map.value = histPingPong.texture;
-  //   histMesh.material.needsUpdate = true;
-  // }
-  // else {
-  //   histMesh = FluidLayer.createMesh();
-  //   histMesh.material = mats.fullScreenMap({}, {
-  //     map: histPingPong.texture,
-  //     blending: THREE.NormalBlending,
-  //     transparent: true,
-  //   });
-  //   scene.add(histMesh);
-  // }
-  scene.background = histPingPong.texture;
+  if (histMesh) {
+    histMesh.material.uniforms.tMap.value = histPingPong.texture;
+    histMesh.material.needsUpdate = true;
+  }
+  else {
+    histMesh = FluidLayer.createMesh();
+    histMesh.material = mats.fullScreenMap({
+      blending: THREE.CustomBlending,
+      transparent: true,
+    }, {
+      map: histPingPong.texture,
+    });
+    scene.add(histMesh);
+  }
 }
 
 const resetLayer = (layer) => {
@@ -393,16 +407,22 @@ const resetLayer = (layer) => {
     layer.strokes[j].reset();
   }
   // const color = generateColor(options.palette, hslPalette[0]);
-  const color = colors[1];
+  // setLayerColor(layer, color);
+}
+
+const setLayerColor = (layer, color) => {
   layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
 }
 
-const resetLayers = (regenerate = false) => {
+const regenerateLayers = () => {
   for (let i=0; i<layers.length; i++) {
-    if (regenerate) {
-      Object.assign(layerOptions[i], generateOptions(i));
-      layers[i].setOptions(layerOptions[i]);
-    }
+   Object.assign(layerOptions[i], generateOptions(i));
+    layers[i].setOptions(layerOptions[i]);
+  }
+}
+
+const resetLayers = () => {
+  for (let i=0; i<layers.length; i++) {
     resetLayer(layers[i]);
   }
 }
@@ -424,16 +444,43 @@ const onClick = (event) => {
   //     break;
   //   case 'resetLayers':
   //   default:
-  //     resetLayers(event);
+  //     regenerateLayers();
+  //     resetLayers();
   //     break
   // }
+  createCell();
+}
+
+let numCells = 0;
+const doCreateCell = () => {
+  numCells++;
   renderToHist();
+  regenerateLayers();
+}
+
+let timeoutID = -1;
+const createCell = () => {
+  if (timeoutID > 0) {
+    clearTimeout(timeoutID);
+    doCreateCell();
+  }
+  if (numCells < options.maxCells) {
+    timeoutID = setTimeout(createCell, FXRand.int(500, 8000));
+  }
 }
 
 //scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
 
 for (let i=0; i<features.layers; i++) {
   addLayer(strokesPerLayer);
+}
+switch (composition) {
+  case 'test':
+    break;
+  case 'cells':
+  default:
+    createCell();
+    break;
 }
 
 core.useEffects(effects);
