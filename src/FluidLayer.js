@@ -37,9 +37,14 @@ export class FluidLayer {
         };
     }
 
-    createMesh() {
-        this.mesh = (new FullScreenQuad()._mesh);
-        this.mesh.frustumCulled = false;
+    static createMesh() {
+        const mesh = (new FullScreenQuad()._mesh);
+        mesh.frustumCulled = false;
+        return mesh;
+    }
+
+    initMesh() {
+        this.mesh = FluidLayer.createMesh();
         return this.mesh;
     }
 

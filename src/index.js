@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
+import * as mats from "fxhash_lib/materials";
 import {FluidLayer} from "./FluidLayer";
 import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
 import {FluidStroke} from "./FluidStroke";
@@ -17,7 +18,7 @@ const options = {
   minLayers: 2,
   maxLayers: 3,
   minStrokes: 1,
-  maxStrokes: 2, // iOS limit
+  maxStrokes: 2, // iOS can do max 22
   minSpeed: 0.001,
   maxSpeed: 0.01,
   speedMult: 1,
@@ -127,10 +128,10 @@ if (devMode) {
   dev.hideGuiSaveRow();
 }
 
-cam.position.x = 1024;
-cam.position.y = 512;
-cam.position.z = 1024;
-core.lookAt(new THREE.Vector3(0, 0, 0));
+// cam.position.x = 1024;
+// cam.position.y = 512;
+// cam.position.z = 1024;
+// core.lookAt(new THREE.Vector3(0, 0, 0));
 
 // Feature generation
 let features = {
@@ -269,7 +270,9 @@ const renderFrame = (event) => {
   core.update();
   dev.update();
   for (let i=0; i<layers.length; i++) {
+    if (layers[i].mesh.visible) {
     layers[i].update(renderer, scene, cam);
+  }
   }
   core.render();
 }
@@ -309,7 +312,8 @@ const createLayer = (numStrokes) => {
     numStrokes,
   }));
   layers[i].resize(core.width, core.height, 1);
-  scene.add(layers[i].createMesh());
+  const mesh = layers[i].initMesh();
+  scene.add(mesh);
   return layers[i];
 }
 
