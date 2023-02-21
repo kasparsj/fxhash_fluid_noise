@@ -6,14 +6,16 @@ import {
     WebGLRenderTarget
 } from 'three';
 import * as mats from "fxhash_lib/materials";
-import {FluidPointer} from "./FluidPointer";
+import {FluidStroke} from "./FluidStroke";
+import {FullScreenQuad} from 'three/examples/jsm/postprocessing/Pass.js';
 
-export class FluidController {
+export class FluidLayer {
     constructor(options) {
-        this.pointers = [];
-        this.mousePointer = null;
+        this.strokes = [];
+        this.mouseStroke = null;
         this.width = 1;
         this.height = 1;
+        this.mesh = null;
         this.options = {};
         this.setOptions(options);
 
@@ -33,6 +35,12 @@ export class FluidController {
             nu: options.nu || 0.5,
             kappa: options.kappa || 0.1,
         };
+    }
+
+    createMesh() {
+        this.mesh = (new FullScreenQuad()._mesh);
+        this.mesh.frustumCulled = false;
+        return this.mesh;
     }
 
     initRenderer() {
@@ -56,7 +64,7 @@ export class FluidController {
     }
 
     initUniforms() {
-        for (let i = 0; i < this.options.numPointers; i++) {
+        for (let i = 0; i < this.options.numStrokes; i++) {
             this.passMaterial.uniforms.uMouse.value[i] = new Vector2(0.5, 0.5);
             this.passMaterial.uniforms.uLast.value[i] = new Vector2(0.5, 0.5);
             this.passMaterial.uniforms.uVelocity.value[i] = new Vector2();
@@ -65,16 +73,16 @@ export class FluidController {
         this.viewMaterial.uniforms.uColor.value = new Vector4();
     }
 
-    initMousePointer() {
-        if (this.mousePointer) {
+    initMouseStroke() {
+        if (this.mouseStroke) {
             return;
         }
 
-        this.mousePointer = new FluidPointer(this.width / 2, this.height / 2);
+        this.mouseStroke = new FluidStroke(0.5, 0.5);
 
         const onTouchStart = ev => {
             ev.preventDefault();
-            this.mousePointer.isDown = true;
+            this.mouseStroke.isDown = true;
             onTouchMove(ev);
         };
 
@@ -89,12 +97,12 @@ export class FluidController {
                 event.y = ev.clientY;
             }
 
-            this.mousePointer.isMove = true;
-            this.mousePointer.pos.copy(event);
+            this.mouseStroke.isMove = true;
+            this.mouseStroke.pos.set(event.x / this.width, event.y / this.height);
         };
 
         const onTouchEnd = ev => {
-            this.mousePointer.isDown = false;
+            this.mouseStroke.isDown = false;
             onTouchMove(ev);
         };
 
@@ -107,30 +115,13 @@ export class FluidController {
         window.addEventListener('mouseup', onTouchEnd);
     }
 
-    addPointer = (x, y, speed) => {
-        if (this.pointers.length >= this.options.numPointers) {
-            return;
+    addStroke = (stroke) => {
+        if (this.strokes.length >= this.options.numStrokes) {
+            return false;
         }
-
-        const pointer = new FluidPointer(x * this.width, y * this.height, speed);
-        this.pointers.push(pointer);
-        return pointer;
+        this.strokes.push(stroke);
+        return true;
     }
-
-    setPointer = (idx, x, y, speed, isDown) => {
-        if (!this.pointers[idx]) {
-            return;
-        }
-
-        this.pointers[idx].speed = speed;
-        this.pointers[idx].target.set(x * this.width, y * this.height);
-        this.pointers[idx].isDown = isDown;
-        return this.pointers[idx];
-    };
-
-    /**
-     * Public methods
-     */
 
     resize = (width, height, dpr) => {
         this.width = width;
@@ -139,32 +130,25 @@ export class FluidController {
         this.renderTargetA.setSize(width * dpr, height * dpr);
         this.renderTargetB.setSize(width * dpr, height * dpr);
 
-        if (this.mousePointer) {
-            this.mousePointer.pos.set(this.width / 2, this.height / 2);
-            this.mousePointer.last.copy(this.mousePointer.pos);
+        if (this.mouseStroke) {
+            this.mouseStroke.pos.set(0.5, 0.5);
+            this.mouseStroke.last.copy(this.mouseStroke.pos);
         }
     };
 
-    update = (mesh, renderer, scene, camera) => {
-        for (let i=0; i<this.pointers.length; i++) {
-            const pointer = this.pointers[i];
-            pointer.update();
-            pointer.delta.subVectors(pointer.pos, pointer.last);
-            this.pointers[i].last.copy(pointer.pos);
-
-            const distance = Math.min(10, pointer.delta.length()) / 10;
-
-            this.passMaterial.uniforms.uLast.value[i].copy(this.passMaterial.uniforms.uMouse.value[i]);
-            this.passMaterial.uniforms.uMouse.value[i].set(pointer.pos.x / this.width, (this.height - pointer.pos.y) / this.height);
-            this.passMaterial.uniforms.uVelocity.value[i].copy(pointer.delta);
-            this.passMaterial.uniforms.uStrength.value[i].set(pointer.isDown ? 50 : 50 * distance, 50 * distance);
+    update = (renderer, scene, camera, mesh) => {
+        for (let i=0; i<this.strokes.length; i++) {
+            this.updateStroke(i);
         }
+        // todo: mousePointer not working!
 
         this.passMaterial.uniforms.tMap.value = this.renderTargetA.texture;
         this.passMaterial.uniforms.dt.value = this.fluid.dt;
         this.passMaterial.uniforms.K.value = this.fluid.K;
         this.passMaterial.uniforms.nu.value = this.fluid.nu;
         this.passMaterial.uniforms.kappa.value = this.fluid.kappa;
+
+        mesh = mesh || this.mesh;
         mesh.material = this.passMaterial;
         renderer.setRenderTarget(this.renderTargetB);
         renderer.render(scene, camera);
@@ -174,9 +158,27 @@ export class FluidController {
         mesh.material = this.viewMaterial;
         renderer.setRenderTarget(null);
 
-        // Swap render targets
+        this.swapRenderTargets();
+    };
+
+    swapRenderTargets = () => {
         const renderTarget = this.renderTargetA;
         this.renderTargetA = this.renderTargetB;
         this.renderTargetB = renderTarget;
-    };
+    }
+
+    updateStroke = (i) => {
+        const stroke = this.strokes[i];
+        stroke.update();
+        stroke.delta.subVectors(stroke.pos, stroke.last);
+        this.strokes[i].last.copy(stroke.pos);
+
+        const deltaPx = stroke.delta.clone().multiply(new Vector2(this.width, this.height));
+        const distaPx = Math.min(10, deltaPx.length()) / 10;
+
+        this.passMaterial.uniforms.uLast.value[i].copy(this.passMaterial.uniforms.uMouse.value[i]);
+        this.passMaterial.uniforms.uMouse.value[i].set(stroke.pos.x, 1.0 - stroke.pos.y);
+        this.passMaterial.uniforms.uVelocity.value[i].copy(deltaPx);
+        this.passMaterial.uniforms.uStrength.value[i].set(stroke.isDown ? 50 : 50 * distaPx, 50 * distaPx);
+    }
 }

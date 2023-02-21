@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import {FullScreenQuad} from 'three/examples/jsm/postprocessing/Pass.js';
 import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
-import {FluidController} from "./FluidController";
+import {FluidLayer} from "./FluidLayer";
 import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
+import {FluidStroke} from "./FluidStroke";
 
 const name = 'fluid';
 const devMode = true;
@@ -16,11 +16,14 @@ const settings = {
 const options = {
   minLayers: 2,
   maxLayers: 3,
-  minPointers: 11,
-  maxPointers: 22, // iOS limit
+  minStrokes: 1,
+  maxStrokes: 2, // iOS limit
   minSpeed: 0.001,
   maxSpeed: 0.01,
-  speedMult: 0.1,
+  speedMult: 1,
+  strokesRel: 'mirrorRand',
+  onClick: 'resetLayers',
+  onReset: '',
 };
 
 const palettes = {
@@ -69,8 +72,9 @@ const createGUI = (gui) => {
   const folder = gui.addFolder('Options');
   folder.add(options, 'minLayers', 1, 5, 1);
   folder.add(options, 'maxLayers', 1, 5, 1);
-  folder.add(options, 'minPointers', 1, 22, 1);
-  folder.add(options, 'maxPointers', 1, 22, 1);
+  folder.add(options, 'minStrokes', 1, 22, 1);
+  folder.add(options, 'maxStrokes', 1, 22, 1);
+  folder.add(options, 'strokesRel', ['same', 'mirror', 'mirrorX', 'mirrorY', 'mirrorRand', 'random']);
   folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
   folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
 
@@ -107,14 +111,17 @@ if (devMode) {
 
 const {cam, scene, renderer} = core.init(settings);
 //const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
+const labelRenderer = core.initCSS2DRenderer();
 let includedPalettes = Object.keys(palettes).filter((palette) => {
   return palettes[palette] === true;
 });
 const layers = [];
-const screens = [];
+const strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
+const labels = new THREE.Group();
 
 if (devMode) {
   //core.initControls(cam);
+  dev.initHelpers();
   //dev.initLighting(lightOptions);
   dev.initEffects(effects);
   dev.hideGuiSaveRow();
@@ -258,18 +265,11 @@ const generateOptions = (i) => {
   return opts;
 }
 
-for (let i=0; i<options.maxLayers; i++) {
-  layerOptions.push(generateOptions(i));
-  if (devMode) {
-    createLayerGui(dev.gui, i);
-  }
-}
-
 const renderFrame = (event) => {
   core.update();
   dev.update();
   for (let i=0; i<layers.length; i++) {
-    layers[i].update(screens[i], renderer, scene, cam);
+    layers[i].update(renderer, scene, cam);
   }
   core.render();
 }
@@ -303,62 +303,102 @@ const addEventListeners = () => {
   }
 }
 
-const createScreen = () => {
-  const screen = (new FullScreenQuad()._mesh);
-  screen.frustumCulled = false;
-  return screen;
-}
-
-const createLayer = () => {
+const createLayer = (numStrokes) => {
   const i = layers.length;
-  const numPointers = FXRand.int(options.minPointers, options.maxPointers);
-  layers[i] = new FluidController(Object.assign({}, layerOptions[i], {
-    numPointers,
+  layers[i] = new FluidLayer(Object.assign({}, layerOptions[i], {
+    numStrokes,
   }));
   layers[i].resize(core.width, core.height, 1);
-  for (let j=0; j<numPointers; j++) {
-    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-    const isDown = FXRand.bool();
-    layers[i].addPointer(FXRand.num(), FXRand.num(), speed, isDown);
-    layers[i].setPointer(j, FXRand.num(), FXRand.num(), speed, isDown);
+  scene.add(layers[i].createMesh());
+  return layers[i];
+}
+
+const createStrokes = (layer, i) => {
+  const numStrokes = layer.options.numStrokes;
+  for (let j=0; j<numStrokes; j++) {
+    let stroke;
+    if (i === 0 || options.strokesRel === 'random') {
+      // first layer all strokes are random
+      const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
+      const isDown = FXRand.bool();
+      stroke = new FluidStroke(FXRand.num(), FXRand.num());
+      stroke.speed = speed;
+      stroke.isDown = isDown;
+      stroke.target.set(FXRand.num(), FXRand.num());
+    }
+    else {
+      let sr = options.strokesRel;
+      if (sr === 'mirrorRand') {
+        sr = FXRand.choice(['mirror', 'mirrorX', 'mirrorY']);
+      }
+      switch (sr) {
+        case 'same':
+          stroke = layers[0].strokes[j].clone();
+          break;
+        case 'mirror':
+        case 'mirrorX':
+        case 'mirrorY':
+        default:
+          stroke = layers[0].strokes[j].clone()[sr || 'mirror']();
+          break;
+      }
+    }
+    layer.addStroke(stroke);
   }
-  screens[i] = createScreen();
-  scene.add(screens[i]);
 }
 
 const resetLayer = (layer) => {
-  layer.initRenderer();
-  for (let j=0; j<layer.pointers.length; j++) {
-    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-    layer.pointers[j].speed = speed;
-    layer.pointers[j].reset();
+  // layer.initRenderer();
+  layer.swapRenderTargets();
+  for (let j=0; j<layer.strokes.length; j++) {
+    if (options.strokesRel === 'random' && options.onReset === 'randomSpeed') {
+      const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
+      layer.strokes[j].speed = speed;
+    }
+    layer.strokes[j].reset();
   }
   // const color = generateColor(options.palette, hslPalette[0]);
   const color = colors[1];
   layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
 }
 
-const onClick = (event) => {
+const resetLayers = (regenerate = false) => {
   for (let i=0; i<layers.length; i++) {
-    if (event) {
-      if (i > 0) {
-        Object.assign(layerOptions[i], generateOptions(i));
-      }
+    if (regenerate) {
+      Object.assign(layerOptions[i], generateOptions(i));
       layers[i].setOptions(layerOptions[i]);
     }
     resetLayer(layers[i]);
   }
 }
 
+const addLayer = (numStrokes) => {
+  const i = layers.length;
+  layerOptions.push(generateOptions(i));
+  if (devMode) {
+    createLayerGui(dev.gui, i);
+  }
+  const layer = createLayer(numStrokes);
+  createStrokes(layer, i);
+}
+
+const onClick = (event) => {
+  switch (options.onClick) {
+    case 'addLayer':
+      addLayer(strokesPerLayer);
+      break;
+    case 'resetLayers':
+    default:
+      resetLayers(event);
+      break
+  }
+}
+
 //scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
 
 for (let i=0; i<features.layers; i++) {
-  createLayer();
+  addLayer(strokesPerLayer);
 }
-for (let i=features.layers; i<options.maxLayers; i++) {
-  dev.gui.removeFolder(dev.gui.getFolder('Layer '+i));
-}
-onClick();
 
 core.useEffects(effects);
 core.animate();
