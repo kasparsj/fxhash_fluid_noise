@@ -25,7 +25,7 @@ const options = {
   maxSpeed: 0.01,
   speedMult: 1,
   strokesRel: 'mirrorRand',
-  maxCells: 10,
+  maxCells: 9,
 };
 
 const compositions = {
@@ -117,6 +117,7 @@ const includedComps = Object.keys(compositions).filter((comp) => {
   return compositions[comp] === true;
 });
 const composition = FXRand.choice(includedComps);
+settings.saveName = name + '_' + composition;
 
 const {cam, scene, renderer} = core.init(Object.assign({}, settings, {
   alpha: composition === 'cells',
@@ -274,8 +275,7 @@ const generateOptions = (i) => {
   let opts;
   do {
     const blendModePass = FXRand.int(0, i > 0 ? 4 : 5);
-    //const blendModeView = FXRand.int(2, blendModePass === 3 ? 3 : 5);
-    const blendModeView = 2;
+    const blendModeView = composition === 'cells' ? 2 : FXRand.int(2, blendModePass === 3 ? 3 : 5);
     opts = {
       blendModePass,
       blendModeView,
@@ -468,7 +468,10 @@ const createCell = () => {
     doCreateCell();
   }
   if (numCells < options.maxCells) {
-    timeoutID = setTimeout(createCell, FXRand.int(500, 8000));
+    timeoutID = setTimeout(createCell, FXRand.int(500, 7000));
+  }
+  else {
+    // todo: add diagonal animation effect
   }
 }
 
