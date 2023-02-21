@@ -125,10 +125,9 @@ const histPingPong = new RenderPingPong(core.width, core.height, {
   format: THREE.RGBAFormat,
   type: THREE.FloatType,
   depthBuffer: false,
-  stencilBuffer: false
+  stencilBuffer: false,
+  generateMipmaps: false,
 });
-histPingPong.targetA.texture.generateMipmaps = false;
-histPingPong.targetB.texture.generateMipmaps = false;
 const labels = new THREE.Group();
 
 if (devMode) {
@@ -365,28 +364,27 @@ const createStrokes = (layer, i) => {
 // let histMesh;
 const renderToHist = () => {
   histPingPong.render(renderer, scene, cam);
+  histPingPong.swap();
 
   // if (histMesh) {
-  //   histMesh.material.uniforms.map.value = histPingPong.targetB.texture;
+  //   histMesh.material.uniforms.map.value = histPingPong.texture;
   //   histMesh.material.needsUpdate = true;
   // }
   // else {
   //   histMesh = FluidLayer.createMesh();
   //   histMesh.material = mats.fullScreenMap({}, {
-  //     map: histTargetB.texture,
+  //     map: histPingPong.texture,
   //     blending: THREE.NormalBlending,
   //     transparent: true,
   //   });
   //   scene.add(histMesh);
   // }
-  scene.background = histPingPong.targetB.texture;
-
-  histPingPong.swap();
+  scene.background = histPingPong.texture;
 }
 
 const resetLayer = (layer) => {
   // layer.initRenderer();
-  layer.swapRenderTargets();
+  layer.renderPingPong.swap();
   for (let j=0; j<layer.strokes.length; j++) {
     if (options.strokesRel === 'random' && options.onReset === 'randomSpeed') {
       const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;

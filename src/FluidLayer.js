@@ -52,10 +52,9 @@ export class FluidLayer {
         this.renderPingPong = new RenderPingPong(this.width, this.height, {
             type: HalfFloatType,
             depthBuffer: false,
-            stencilBuffer: false
+            stencilBuffer: false,
+            generateMipmaps: false,
         });
-        this.renderPingPong.targetA.texture.generateMipmaps = false;
-        this.renderPingPong.targetB.texture.generateMipmaps = false;
 
         this.passMaterial = mats.fluidPass({
             blending: this.options.blendModePass,
@@ -145,7 +144,7 @@ export class FluidLayer {
         }
         // todo: mousePointer not working!
 
-        this.passMaterial.uniforms.tMap.value = this.renderPingPong.targetA.texture;
+        this.passMaterial.uniforms.tMap.value = this.renderPingPong.texture;
         this.passMaterial.uniforms.dt.value = this.fluid.dt;
         this.passMaterial.uniforms.K.value = this.fluid.K;
         this.passMaterial.uniforms.nu.value = this.fluid.nu;
@@ -154,12 +153,11 @@ export class FluidLayer {
         mesh = mesh || this.mesh;
         mesh.material = this.passMaterial;
         this.renderPingPong.render(renderer, scene, camera);
+        this.renderPingPong.swap();
 
-        this.viewMaterial.uniforms.tMap.value = this.renderPingPong.targetB.texture;
+        this.viewMaterial.uniforms.tMap.value = this.renderPingPong.texture;
         this.viewMaterial.uniforms.uColor.value.copy(this.color);
         mesh.material = this.viewMaterial;
-
-        this.renderPingPong.swap();
     };
 
     updateStroke = (i) => {
