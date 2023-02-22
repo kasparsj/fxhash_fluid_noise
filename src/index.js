@@ -10,7 +10,11 @@ import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars} from "./vars";
+import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars} from "./vars";
+import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
+import {FullScreenQuad} from "three/examples/jsm/postprocessing/Pass";
+
+let histComposer, fsQuadMesh;
 
 setup();
 
@@ -26,6 +30,7 @@ function setup() {
     alpha: comp === 'cells',
   });
   core.init(initSettings);
+
   //core.initLights(lightOptions);
   css2D.init();
 
@@ -33,7 +38,7 @@ function setup() {
     //core.initControls(cam);
     dev.initHelpers();
     //dev.initLighting(lightOptions);
-    dev.initEffects(effectOptions);
+    dev.createEffectsGui(effectOptions);
     dev.hideGuiSaveRow();
   }
 
@@ -53,7 +58,17 @@ function createScene() {
   // cam.position.z = 1024;
   // core.lookAt(new THREE.Vector3(0, 0, 0));
 
-  if (comp !== 'cells') {
+  if (comp === 'cells') {
+    histComposer = new EffectComposer(renderer);
+    histComposer.renderToScreen = false;
+    fsQuadMesh = new FullScreenQuad(mats.fullScreenMap({
+      blending: THREE.CustomBlending,
+      transparent: true,
+      map: histComposer.readBuffer.texture,
+    }))._mesh;
+  }
+  else {
+    // todo: maybe better use color material?
     scene.background = colors[0];
   }
 
@@ -64,6 +79,7 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
+      scene.add(fsQuadMesh);
       requestCell();
       break;
   }
@@ -125,25 +141,6 @@ function createStrokes(layer, i) {
       }
     }
     layer.addStroke(stroke);
-  }
-}
-
-function renderToHist() {
-  histPingPong.render(renderer, scene, cam);
-  histPingPong.swap();
-
-  if (histMesh.material.isShaderMaterial) {
-    histMesh.material.uniforms.tMap.value = histPingPong.texture;
-    histMesh.material.needsUpdate = true;
-  }
-  else {
-    histMesh.material = mats.fullScreenMap({
-      blending: THREE.CustomBlending,
-      transparent: true,
-    }, {
-      map: histPingPong.texture,
-    });
-    scene.add(histMesh);
   }
 }
 
@@ -290,7 +287,9 @@ function validateOptions(options, i) {
 
 const createCell = () => {
   vars.numCells++;
-  renderToHist();
+  histComposer.render(renderer, scene, cam);
+  fsQuadMesh.material.uniforms.tMap.value = histComposer.readBuffer.texture;
+  fsQuadMesh.material.needsUpdate = true;
   layers.map((layer) => {
     regenerateLayer(layer);
   });

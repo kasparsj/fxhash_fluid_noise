@@ -1,12 +1,9 @@
 import * as THREE from "three";
 import {chooseComposition, choosePalette, options} from "./config";
-import * as core from "fxhash_lib/core";
 import * as FXRand from "fxhash_lib/random";
-import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
-import {RenderPingPong} from "fxhash_lib/RenderPingPong";
-import {FluidLayer} from "fxhash_lib/fluid";
+import {generateHSLPalette, hsl2Color} from "fxhash_lib/color";
 
-let palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars;
+let palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars;
 
 const initVars = () => {
     palette = choosePalette();
@@ -15,14 +12,6 @@ const initVars = () => {
     comp = chooseComposition();
     layers = [];
     strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
-    histPingPong = new RenderPingPong(core.width, core.height, {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        depthBuffer: false,
-        stencilBuffer: false,
-        generateMipmaps: false,
-    });
-    histMesh = FluidLayer.createMesh();
     labels = new THREE.Group();
     vars = {timeoutID: -1, numCells: 0};
 
@@ -35,4 +24,4 @@ const initVars = () => {
     window.$fxhashFeatures = features;
 }
 
-export {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars};
+export {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars};
