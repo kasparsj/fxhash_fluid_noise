@@ -1,4 +1,4 @@
-import * as FXRand from "../../fxhash_lib/random";
+import * as FXRand from "fxhash_lib/random";
 
 const name = 'fluid';
 
@@ -55,7 +55,7 @@ export const lightOptions = {
     hemiIntensity: 0.6,
 };
 
-export const effects = {
+export const effectOptions = {
     enabled: true,
     hBlur: 1 / window.innerWidth / 2,
     vBlur: 1 / window.innerHeight / 2,
@@ -67,6 +67,7 @@ export const effects = {
     dotScreen: false,
     dotScale: 0,
     rgbShift: 0,
+    //pixelate: false,
 };
 
 export const chooseComposition = () => {

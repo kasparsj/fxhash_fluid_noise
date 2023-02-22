@@ -3,9 +3,11 @@ import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as mats from "fxhash_lib/materials";
+import * as effects from "fxhash_lib/effects";
+import * as css2D from "fxhash_lib/css2D";
 import {generateColor} from "fxhash_lib/color";
 import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
-import {devMode, settings, options, layerOptions, lightOptions, effects} from "./config"
+import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars} from "./vars";
@@ -25,19 +27,19 @@ function setup() {
   });
   core.init(initSettings);
   //core.initLights(lightOptions);
-  core.initCSS2DRenderer();
+  css2D.init();
 
   if (devMode) {
     //core.initControls(cam);
     dev.initHelpers();
     //dev.initLighting(lightOptions);
-    dev.initEffects(effects);
+    dev.initEffects(effectOptions);
     dev.hideGuiSaveRow();
   }
 
   createScene();
 
-  core.useEffects(effects);
+  effects.init(effectOptions);
   core.animate();
 
   addEventListeners();
@@ -342,7 +344,7 @@ function onClick(event) {
 
 function onKeyDown(event) {
   if (devMode) {
-    dev.keyDown(event, settings, lightOptions, effects);
+    dev.keyDown(event, settings, lightOptions, effectOptions);
   }
 }
 
