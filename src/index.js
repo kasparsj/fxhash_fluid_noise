@@ -187,104 +187,103 @@ function generateOptions(i) {
 }
 
 function validateOptions(options, i) {
-  return true;
   const invalidBlends = ['4-4'];
   const blendModeString = options.blendModePass+'-'+options.blendModeView;
   if (invalidBlends.indexOf(blendModeString) > -1) {
     return false;
   }
-  if (i > 0 && [2, 4].indexOf(options.blendModeView) > -1 && options.blendModeView === layerOptions[i-1].blendModeView) {
-    return false;
-  }
-  if (palette === 'Black&White') {
-    const invalidBWBlends = ['1-2'];
-    if (invalidBWBlends.indexOf(blendModeString) > -1) {
-      return false;
-    }
-    if (hslPalette[0][2] < 0.5) {
-      if (blendModeString === '0-4' && options.dt < 0.5) {
-        return false;
-      }
-      if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
-        return false;
-      }
-      if (['2-3', '3-2', '3-3', '4-3'].indexOf(blendModeString) > -1) {
-        return false;
-      }
-    }
-    else {
-      if (blendModeString === '0-2') {
-        return false;
-      }
-      if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.45) {
-        return false;
-      }
-      if (blendModeString === '2-3' && options.dt < 0.8) {
-        return false;
-      }
-    }
-    if (blendModeString === '0-5' && options.dt < 0.25) {
-      return false;
-    }
-    if (['1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
-      return false;
-    }
-    if (blendModeString === '2-4' && options.dt < 0.7) {
-      return false;
-    }
-    if (['4-2', '4-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
-      return false;
-    }
-  }
-  else if (palette === 'Mono') {
-    if (i > 0 && ['2-3', '2-5'].indexOf(blendModeString) > -1) {
-      return false;
-    }
-    if (blendModeString === '3-2' && options.dt < 0.7) {
-      return false;
-    }
-  }
-  else if (palette === 'Analogous') {
-    if (['2-5'].indexOf(blendModeString) > -1) {
-      return false;
-    }
-    if (i > 0 && ['1-4', '2-2', '3-2'].indexOf(blendModeString) > -1) {
-      return false;
-    }
-    if (['0-3', '0-5', '1-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
-      return false;
-    }
-    if (['1-2', '1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
-      return false;
-    }
-    if (['2-3', '3-2', '4-2', '4-3'].indexOf(blendModeString) > -1 && options.dt < 0.6) {
-      return false;
-    }
-    if (['2-4'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
-      return false;
-    }
-    if (blendModeString === '4-5' && options.dt < 0.5) {
-      return false;
-    }
-  }
-  if (blendModeString === '0-4' && options.dt < 0.3) {
-    return false;
-  }
-  if (blendModeString === '1-5' && options.dt < 0.3) {
-    return false;
-  }
-  if (blendModeString === '2-2' && options.dt < 0.8) {
-    return false;
-  }
-  if (blendModeString === '2-4' && options.dt < 0.5) {
-    return false;
-  }
-  if (blendModeString === '3-2' && options.dt < 0.4) {
-    return false;
-  }
-  if (blendModeString === '3-3' && options.dt < 0.45) {
-    return false;
-  }
+  // if (i > 0 && [2, 4].indexOf(options.blendModeView) > -1 && options.blendModeView === layerOptions[i-1].blendModeView) {
+  //   return false;
+  // }
+  // if (palette === 'Black&White') {
+  //   const invalidBWBlends = ['1-2'];
+  //   if (invalidBWBlends.indexOf(blendModeString) > -1) {
+  //     return false;
+  //   }
+  //   if (hslPalette[0][2] < 0.5) {
+  //     if (blendModeString === '0-4' && options.dt < 0.5) {
+  //       return false;
+  //     }
+  //     if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
+  //       return false;
+  //     }
+  //     if (['2-3', '3-2', '3-3', '4-3'].indexOf(blendModeString) > -1) {
+  //       return false;
+  //     }
+  //   }
+  //   else {
+  //     if (blendModeString === '0-2') {
+  //       return false;
+  //     }
+  //     if (['0-3', '2-5'].indexOf(blendModeString) > -1 && options.dt < 0.45) {
+  //       return false;
+  //     }
+  //     if (blendModeString === '2-3' && options.dt < 0.8) {
+  //       return false;
+  //     }
+  //   }
+  //   if (blendModeString === '0-5' && options.dt < 0.25) {
+  //     return false;
+  //   }
+  //   if (['1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
+  //     return false;
+  //   }
+  //   if (blendModeString === '2-4' && options.dt < 0.7) {
+  //     return false;
+  //   }
+  //   if (['4-2', '4-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
+  //     return false;
+  //   }
+  // }
+  // else if (palette === 'Mono') {
+  //   if (i > 0 && ['2-3', '2-5'].indexOf(blendModeString) > -1) {
+  //     return false;
+  //   }
+  //   if (blendModeString === '3-2' && options.dt < 0.7) {
+  //     return false;
+  //   }
+  // }
+  // else if (palette === 'Analogous') {
+  //   if (['2-5'].indexOf(blendModeString) > -1) {
+  //     return false;
+  //   }
+  //   if (i > 0 && ['1-4', '2-2', '3-2'].indexOf(blendModeString) > -1) {
+  //     return false;
+  //   }
+  //   if (['0-3', '0-5', '1-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
+  //     return false;
+  //   }
+  //   if (['1-2', '1-3', '1-4'].indexOf(blendModeString) > -1 && options.dt < 0.3) {
+  //     return false;
+  //   }
+  //   if (['2-3', '3-2', '4-2', '4-3'].indexOf(blendModeString) > -1 && options.dt < 0.6) {
+  //     return false;
+  //   }
+  //   if (['2-4'].indexOf(blendModeString) > -1 && options.dt < 0.75) {
+  //     return false;
+  //   }
+  //   if (blendModeString === '4-5' && options.dt < 0.5) {
+  //     return false;
+  //   }
+  // }
+  // if (blendModeString === '0-4' && options.dt < 0.3) {
+  //   return false;
+  // }
+  // if (blendModeString === '1-5' && options.dt < 0.3) {
+  //   return false;
+  // }
+  // if (blendModeString === '2-2' && options.dt < 0.8) {
+  //   return false;
+  // }
+  // if (blendModeString === '2-4' && options.dt < 0.5) {
+  //   return false;
+  // }
+  // if (blendModeString === '3-2' && options.dt < 0.4) {
+  //   return false;
+  // }
+  // if (blendModeString === '3-3' && options.dt < 0.45) {
+  //   return false;
+  // }
   return true;
 }
 
