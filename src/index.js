@@ -7,126 +7,20 @@ import {RenderPingPong} from "fxhash_lib/RenderPingPong";
 import {FluidLayer} from "./FluidLayer";
 import {generateHSLPalette, hsl2Color, generateColor} from "../../fxhash_lib/color";
 import {FluidStroke} from "./FluidStroke";
-
-const name = 'fluid';
-const devMode = true;
-
-const settings = {
-  name,
-};
-
-const options = {
-  minLayers: 2,
-  maxLayers: 3,
-  minStrokes: 1,
-  maxStrokes: 2, // iOS can do max 22
-  maxIterations: 10,
-  minSpeed: 0.001,
-  maxSpeed: 0.01,
-  speedMult: 1,
-  strokesRel: 'mirrorRand',
-  maxCells: 9,
-};
-
-const compositions = {
-  cells: true,
-  regenerate: false,
-  reset: false,
-  addnew: false,
-};
-
-const palettes = {
-  'Black&White': true,
-  'Mono': true,
-  'Analogous': true,
-  'Complementary': true,
-};
-
-const layerOptions = [];
-
-const lightOptions = {
-  ambLight: true,
-  ambColor: 0x404040,
-  ambIntensity: 0.1,
-  camLight: true,
-  camLightColor: 0xFFFFFF,
-  camLightIntensity: 0.5,
-  sunLight: true,
-  sunLightColor: 0xFFFFFF,
-  sunLightIntensity: 0.7,
-  sunElevation: 45,
-  sunAzimuth: 90,
-  hemiLight: true,
-  hemiSkyColor: 0x3284ff,
-  hemiGroundColor: 0xffffff,
-  hemiIntensity: 0.6,
-};
-
-const effects = {
-  enabled: true,
-  hBlur: 1 / window.innerWidth / 2,
-  vBlur: 1 / window.innerHeight / 2,
-  noiseIntensity: 0.35,
-  scanlinesIntensity: 0.25,
-  scanlinesCount: 0,
-  grayscale: true,
-  dotScreen: false,
-  dotScale: 0,
-  rgbShift: 0,
-};
-
-const createGUI = (gui) => {
-  gui.remember(options);
-
-  const folder = gui.addFolder('Options');
-  folder.add(options, 'minLayers', 1, 5, 1);
-  folder.add(options, 'maxLayers', 1, 5, 1);
-  folder.add(options, 'minStrokes', 1, 22, 1);
-  folder.add(options, 'maxStrokes', 1, 22, 1);
-  folder.add(options, 'strokesRel', ['same', 'mirror', 'mirrorX', 'mirrorY', 'mirrorRand', 'random']);
-  folder.add(options, 'maxCells', 5, 20, 1);
-  folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
-  folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
-  folder.add(options, 'speedMult', 0.1, 10, 0.1).listen();
-  folder.add(options, 'maxIterations', 1, 20, 1);
-
-  dev.createCheckBoxGui(compositions, 'Compositions');
-  dev.createCheckBoxGui(palettes, 'Palettes');
-}
-
-const createLayerGui = (gui, i) => {
-  const folder = gui.addFolder('Layer '+i);
-  const updateLayer = () => {
-    layers[i].setOptions(layerOptions[i]);
-    layers[i].initRenderer();
-  }
-  folder.add(layerOptions[i], 'blendModePass', 0, 5, 1).listen().onChange(updateLayer);
-  folder.add(layerOptions[i], 'blendModeView', 2, 5, 1).listen().onChange(updateLayer);
-  folder.add(layerOptions[i], 'dt', 0, 1, 0.01).listen().onChange(updateLayer);
-  folder.add(layerOptions[i], 'K', 0, 1, 0.01).listen().onChange(updateLayer);
-  folder.add(layerOptions[i], 'nu', 0, 1, 0.01).listen().onChange(updateLayer);
-  folder.add(layerOptions[i], 'kappa', 0, 1, 0.01).listen().onChange(updateLayer);
-}
+import {devMode, settings, options, layerOptions, lightOptions, effects, chooseComposition, choosePalette} from "./config"
+import {createGUI, createLayerGUI} from "./gui";
 
 if (devMode) {
   dev.initGui(name);
   createGUI(dev.gui);
 }
 
-const includedComps = Object.keys(compositions).filter((comp) => {
-  return compositions[comp] === true;
-});
-const composition = FXRand.choice(includedComps);
-settings.saveName = name + '_' + composition;
-
+const composition = chooseComposition();
 const {cam, scene, renderer} = core.init(Object.assign({}, settings, {
   alpha: composition === 'cells',
 }));
 //const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
 const labelRenderer = core.initCSS2DRenderer();
-const includedPalettes = Object.keys(palettes).filter((palette) => {
-  return palettes[palette] === true;
-});
 const layers = [];
 const strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
 const histPingPong = new RenderPingPong(core.width, core.height, {
@@ -154,11 +48,10 @@ if (devMode) {
 
 // Feature generation
 let features = {
-  palette: FXRand.choice(includedPalettes),
+  palette: choosePalette(),
   layers: FXRand.int(options.minLayers, options.maxLayers),
   colorW: FXRand.exp(0.1, 8),
 }
-Object.assign(features, layerOptions[0]);
 
 window.$fxhashFeatures = features;
 
@@ -423,7 +316,7 @@ const addLayer = (numStrokes) => {
   const i = layers.length;
   layerOptions.push(generateOptions(i));
   if (devMode) {
-    createLayerGui(dev.gui, i);
+    createLayerGUI(dev.gui, layers, i);
   }
   const layer = createLayer(numStrokes);
   createStrokes(layer, i);
