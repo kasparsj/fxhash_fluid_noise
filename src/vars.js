@@ -1,10 +1,10 @@
-import {chooseComposition, choosePalette, options} from "./config";
-import * as FXRand from "../../fxhash_lib/random";
-import {RenderPingPong} from "../../fxhash_lib/RenderPingPong";
-import * as core from "../../fxhash_lib/core";
 import * as THREE from "three";
-import {FluidLayer} from "./FluidLayer";
+import {chooseComposition, choosePalette, options} from "./config";
+import * as core from "fxhash_lib/core";
+import * as FXRand from "fxhash_lib/random";
 import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
+import {RenderPingPong} from "fxhash_lib/RenderPingPong";
+import {FluidLayer} from "fxhash_lib/fluid";
 
 let palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars;
 

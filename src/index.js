@@ -3,10 +3,9 @@ import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as mats from "fxhash_lib/materials";
-import {FluidLayer} from "./FluidLayer";
-import {generateColor} from "../../fxhash_lib/color";
-import {FluidStroke} from "./FluidStroke";
-import {devMode, settings, options, layerOptions, lightOptions, effects, chooseComposition, choosePalette} from "./config"
+import {generateColor} from "fxhash_lib/color";
+import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
+import {devMode, settings, options, layerOptions, lightOptions, effects} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars} from "./vars";
@@ -25,7 +24,7 @@ function setup() {
     alpha: comp === 'cells',
   });
   core.init(initSettings);
-  //const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
+  //core.initLights(lightOptions);
   core.initCSS2DRenderer();
 
   if (devMode) {
@@ -63,7 +62,7 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
-      createCell();
+      requestCell();
       break;
   }
 }
@@ -287,7 +286,7 @@ function validateOptions(options, i) {
   return true;
 }
 
-const doCreateCell = () => {
+const createCell = () => {
   vars.numCells++;
   renderToHist();
   layers.map((layer) => {
@@ -295,13 +294,13 @@ const doCreateCell = () => {
   });
 }
 
-function createCell() {
+function requestCell() {
   if (vars.timeoutID > 0) {
     clearTimeout(vars.timeoutID);
-    doCreateCell();
+    createCell();
   }
   if (vars.numCells < options.maxCells) {
-    vars.timeoutID = setTimeout(createCell, FXRand.int(500, 7000));
+    vars.timeoutID = setTimeout(requestCell, FXRand.int(500, 7000));
   }
   else {
     // todo: add diagonal animation effect
@@ -336,8 +335,7 @@ function onClick(event) {
       });
       break;
     case 'cells':
-    default:
-      createCell();
+      requestCell();
       break
   }
 }
