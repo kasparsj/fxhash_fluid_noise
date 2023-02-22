@@ -11,7 +11,6 @@ import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features} from "./vars";
 
-const sketch = {};
 setup();
 
 function setup() {
@@ -22,9 +21,10 @@ function setup() {
 
   initVars();
 
-  core.init(Object.assign({}, settings, {
+  const initSettings = Object.assign({}, settings, {
     alpha: comp === 'cells',
-  }));
+  });
+  core.init(initSettings);
   //const {camLight, sunLight, ambLight} = core.initLights(lightOptions);
   core.initCSS2DRenderer();
 
@@ -36,6 +36,17 @@ function setup() {
     dev.hideGuiSaveRow();
   }
 
+  createScene();
+
+  core.useEffects(effects);
+  core.animate();
+
+  addEventListeners();
+
+  fxpreview();
+}
+
+function createScene() {
   // cam.position.x = 1024;
   // cam.position.y = 512;
   // cam.position.z = 1024;
@@ -55,13 +66,6 @@ function setup() {
       createCell();
       break;
   }
-
-  core.useEffects(effects);
-  core.animate();
-
-  addEventListeners();
-
-  fxpreview();
 }
 
 function addLayer(numStrokes) {
