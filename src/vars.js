@@ -6,7 +6,7 @@ import * as THREE from "three";
 import {FluidLayer} from "./FluidLayer";
 import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
 
-let palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features;
+let palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars;
 
 const initVars = () => {
     palette = choosePalette();
@@ -24,6 +24,7 @@ const initVars = () => {
     });
     histMesh = FluidLayer.createMesh();
     labels = new THREE.Group();
+    vars = {timeoutID: -1, numCells: 0};
 
     // Feature generation
     features = {
@@ -34,4 +35,4 @@ const initVars = () => {
     window.$fxhashFeatures = features;
 }
 
-export {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features};
+export {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars};

@@ -9,7 +9,7 @@ import {FluidStroke} from "./FluidStroke";
 import {devMode, settings, options, layerOptions, lightOptions, effects, chooseComposition, choosePalette} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features} from "./vars";
+import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars} from "./vars";
 
 setup();
 
@@ -131,7 +131,7 @@ function renderToHist() {
   histPingPong.render(renderer, scene, cam);
   histPingPong.swap();
 
-  if (histMesh) {
+  if (histMesh.material.isShaderMaterial) {
     histMesh.material.uniforms.tMap.value = histPingPong.texture;
     histMesh.material.needsUpdate = true;
   }
@@ -288,23 +288,21 @@ function validateOptions(options, i) {
   return true;
 }
 
-let numCells = 0;
 const doCreateCell = () => {
-  numCells++;
+  vars.numCells++;
   renderToHist();
   layers.map((layer) => {
     regenerateLayer(layer);
   });
 }
 
-let timeoutID = -1;
 function createCell() {
-  if (timeoutID > 0) {
-    clearTimeout(timeoutID);
+  if (vars.timeoutID > 0) {
+    clearTimeout(vars.timeoutID);
     doCreateCell();
   }
-  if (numCells < options.maxCells) {
-    timeoutID = setTimeout(createCell, FXRand.int(500, 7000));
+  if (vars.numCells < options.maxCells) {
+    vars.timeoutID = setTimeout(createCell, FXRand.int(500, 7000));
   }
   else {
     // todo: add diagonal animation effect
