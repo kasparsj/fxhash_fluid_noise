@@ -59,6 +59,7 @@ export const effects = {
     enabled: true,
     hBlur: 1 / window.innerWidth / 2,
     vBlur: 1 / window.innerHeight / 2,
+    noiseType: 'glsl-film-grain',
     noiseIntensity: 0.35,
     scanlinesIntensity: 0.25,
     scanlinesCount: 0,
