@@ -10,7 +10,11 @@ import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars} from "./vars";
+import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars} from "./vars";
+import {RenderPingPong} from "../../fxhash_lib/RenderPingPong";
+import {FullScreenQuad} from "three/examples/jsm/postprocessing/Pass";
+
+let histPingPong, histMesh;
 
 setup();
 
@@ -64,12 +68,19 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
+      histPingPong = new RenderPingPong(core.width, core.height, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        depthBuffer: false,
+      });
+      histMesh = (new FullScreenQuad())._mesh;
       histMesh.material = mats.fullScreenMap({
         blending: THREE.CustomBlending,
         transparent: true,
       }, {
         map: histPingPong.texture,
       });
+      histMesh.frustumCulled = false;
       scene.add(histMesh);
       requestCell();
       break;
