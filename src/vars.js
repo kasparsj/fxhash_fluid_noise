@@ -19,8 +19,6 @@ const initVars = () => {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         depthBuffer: false,
-        stencilBuffer: false,
-        generateMipmaps: false,
     });
     histMesh = (new FullScreenQuad())._mesh;
     labels = new THREE.Group();

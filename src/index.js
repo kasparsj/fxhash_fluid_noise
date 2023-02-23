@@ -64,6 +64,13 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
+      histMesh.material = mats.fullScreenMap({
+        blending: THREE.CustomBlending,
+        transparent: true,
+      }, {
+        map: histPingPong.texture,
+      });
+      scene.add(histMesh);
       requestCell();
       break;
   }
@@ -131,20 +138,8 @@ function createStrokes(layer, i) {
 function renderToHist() {
   histPingPong.render(renderer, scene, cam);
   histPingPong.swap();
-
-  if (histMesh.material.isShaderMaterial) {
-    histMesh.material.uniforms.tMap.value = histPingPong.texture;
-    histMesh.material.needsUpdate = true;
-  }
-  else {
-    histMesh.material = mats.fullScreenMap({
-      blending: THREE.CustomBlending,
-      transparent: true,
-    }, {
-      map: histPingPong.texture,
-    });
-    scene.add(histMesh);
-  }
+  histMesh.material.uniforms.tMap.value = histPingPong.texture;
+  histMesh.material.needsUpdate = true;
 }
 
 function resetLayer(layer) {
