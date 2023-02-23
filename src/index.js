@@ -10,7 +10,8 @@ import {devMode, settings, options, layerOptions, lightOptions, effectOptions} f
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars} from "./vars";
-import {FullScreenLayer} from "../../fxhash_lib/postprocessing/FullScreenLayer";
+import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
+import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 
 let hist;
 
@@ -67,9 +68,11 @@ function createScene() {
   switch (comp) {
     case 'cells':
       hist = new FullScreenLayer({
+        type: THREE.HalfFloatType,
         blending: THREE.CustomBlending,
         transparent: true,
       });
+      hist.composer.addPass(new RenderPass(scene, cam));
       scene.add(hist.mesh);
       requestCell();
       break;
@@ -95,9 +98,7 @@ function createLayer(numStrokes) {
     transparent: transparent,
   }));
   setLayerColor(layers[i], colors[1]);
-  layers[i].resize(core.width, core.height, 1);
-  const mesh = layers[i].initMesh();
-  scene.add(mesh);
+  scene.add(layers[i].mesh);
   return layers[i];
 }
 
@@ -135,12 +136,8 @@ function createStrokes(layer, i) {
   }
 }
 
-function renderToHist() {
-  hist.render();
-}
-
 function resetLayer(layer) {
-  layer.initRenderer(renderer, scene, cam);
+  layer.clear();
   regenerateLayer(layer);
   for (let j=0; j<layer.strokes.length; j++) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
@@ -282,7 +279,8 @@ function validateOptions(options, i) {
 
 const createCell = () => {
   vars.numCells++;
-  renderToHist();
+  hist.render();
+  hist.composer.swapBuffers();
   layers.map((layer) => {
     regenerateLayer(layer);
   });
@@ -324,7 +322,7 @@ function onClick(event) {
       break
     case 'regenerate':
       layers.map((layer) => {
-        layer.renderPingPong.swap();
+        //layer.composer.swapBuffers();
         regenerateLayer(layer);
       });
       break;
