@@ -9,7 +9,7 @@ import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars} from "./vars";
+import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars} from "./vars";
 
 let histFBO, histMesh;
 
@@ -24,7 +24,7 @@ function setup() {
   initVars();
 
   const initSettings = Object.assign({}, settings, {
-    alpha: comp === 'cells',
+    alpha: transparent,
   });
   core.init(initSettings);
   //core.initLights(lightOptions);
@@ -96,7 +96,7 @@ function createLayer(numStrokes) {
     numStrokes,
     maxIterations: options.maxIterations,
     bgColor: colors[0],
-    transparent: comp === 'cells',
+    transparent: transparent,
   }));
   setLayerColor(layers[i], colors[1]);
   layers[i].resize(core.width, core.height, 1);
@@ -147,7 +147,7 @@ function renderToHist() {
 }
 
 function resetLayer(layer) {
-  layer.initRenderer();
+  layer.initRenderer(renderer, scene, cam);
   regenerateLayer(layer);
   for (let j=0; j<layer.strokes.length; j++) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
