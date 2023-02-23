@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
-import * as mats from "fxhash_lib/materials";
 import * as effects from "fxhash_lib/effects";
 import * as css2D from "fxhash_lib/css2D";
 import {generateColor} from "fxhash_lib/color";
@@ -11,7 +10,6 @@ import {devMode, settings, options, layerOptions, lightOptions, effectOptions} f
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars} from "./vars";
-import {FullScreenQuad} from "three/examples/jsm/postprocessing/Pass";
 
 let histFBO, histMesh;
 
@@ -72,7 +70,7 @@ function createScene() {
         magFilter: THREE.LinearFilter,
         depthBuffer: false,
       });
-      histMesh = core.createFBOMesh(histFBO, {
+      histMesh = core.createFSMapMesh(histFBO.writeBuffer.texture, {
         blending: THREE.CustomBlending,
         transparent: true,
       });
@@ -94,7 +92,7 @@ function addLayer(numStrokes) {
 
 function createLayer(numStrokes) {
   const i = layers.length;
-  layers[i] = new FluidLayer(Object.assign({}, layerOptions[i], {
+  layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
     maxIterations: options.maxIterations,
     bgColor: colors[0],
@@ -315,7 +313,7 @@ function draw(event) {
   dev.update();
   for (let i=0; i<layers.length; i++) {
     if (layers[i].mesh.visible) {
-      layers[i].update(renderer, scene, cam);
+      layers[i].update();
     }
   }
   core.render();
