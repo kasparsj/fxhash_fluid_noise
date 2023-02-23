@@ -5,7 +5,6 @@ import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 import * as css2D from "fxhash_lib/css2D";
 import {generateColor} from "fxhash_lib/color";
-import {FluidLayer, FluidStroke} from "fxhash_lib/fluid";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
@@ -15,6 +14,7 @@ import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "../../fxhash_lib/postprocessing/FluidPass";
+import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
 
 let hist, materialFBO;
 
@@ -149,10 +149,14 @@ function createStrokes(layer, i) {
     if (i === 0 || options.strokesRel === 'random') {
       // first layer all strokes are random
       const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-      stroke = new FluidStroke(FXRand.num(), FXRand.num());
-      stroke.speed = speed;
-      stroke.isDown = FXRand.bool();
-      stroke.target.set(FXRand.num(), FXRand.num());
+      const pos = new THREE.Vector2(FXRand.num(), FXRand.num());
+      const target = new THREE.Vector2(FXRand.num(), FXRand.num());
+      stroke = {
+        speed,
+        //isDown: FXRand.bool(),
+        pos,
+        target
+      };
     }
     else {
       let sr = options.strokesRel;
@@ -161,27 +165,27 @@ function createStrokes(layer, i) {
       }
       switch (sr) {
         case 'same':
-          stroke = layers[0].strokes[j].clone();
+          stroke = layers[0].fluidPass.getStroke(j);
           break;
         case 'mirror':
         case 'mirrorX':
         case 'mirrorY':
         default:
-          stroke = layers[0].strokes[j].clone()[sr || 'mirror']();
+          stroke = FluidPass[sr || 'mirror'](layers[0].fluidPass.getStroke(j));
           break;
       }
     }
-    layer.addStroke(stroke);
+    layer.fluidPass.initStroke(j, stroke);
   }
 }
 
 function resetLayer(layer) {
   layer.clear();
   regenerateLayer(layer);
-  for (let j=0; j<layer.strokes.length; j++) {
+  for (let j=0; j<layer.options.numStrokes; j++) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-    layer.strokes[j].speed = speed;
-    layer.strokes[j].reset();
+    layer.fluidPass.uniforms.uSpeed.value[j] = speed;
+    layer.fluidPass.reset(j);
   }
   const color = generateColor(palette, hslPalette[0]);
   setLayerColor(layer, color);
