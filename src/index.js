@@ -33,7 +33,7 @@ function setup() {
     //core.initControls(cam);
     dev.initHelpers();
     //dev.initLighting(lightOptions);
-    dev.initEffects(effectOptions);
+    dev.createEffectsGui(effectOptions);
     dev.hideGuiSaveRow();
   }
 

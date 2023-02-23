@@ -4,7 +4,7 @@ import * as core from "fxhash_lib/core";
 import * as FXRand from "fxhash_lib/random";
 import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
 import {RenderPingPong} from "fxhash_lib/RenderPingPong";
-import {FluidLayer} from "fxhash_lib/fluid";
+import {FullScreenQuad} from "three/examples/jsm/postprocessing/Pass";
 
 let palette, hslPalette, colors, comp, layers, strokesPerLayer, histPingPong, histMesh, labels, features, vars;
 
@@ -22,7 +22,7 @@ const initVars = () => {
         stencilBuffer: false,
         generateMipmaps: false,
     });
-    histMesh = FluidLayer.createMesh();
+    histMesh = (new FullScreenQuad())._mesh;
     labels = new THREE.Group();
     vars = {timeoutID: -1, numCells: 0};
 
