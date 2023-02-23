@@ -7,7 +7,7 @@ import * as css2D from "fxhash_lib/css2D";
 import {generateColor} from "fxhash_lib/color";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
-import {width, height, renderer, scene, cam} from "fxhash_lib/core";
+import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars} from "./vars";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
@@ -243,11 +243,11 @@ function validateOptions(options, i) {
   // if (i > 0 && [2, 4].indexOf(options.blendModeView) > -1 && options.blendModeView === layerOptions[i-1].blendModeView) {
   //   return false;
   // }
-  // if (palette === 'Black&White') {
-  //   const invalidBWBlends = ['1-2'];
-  //   if (invalidBWBlends.indexOf(blendModeString) > -1) {
-  //     return false;
-  //   }
+  if (palette === 'Black&White') {
+    const invalidBWBlends = ['1-2'];
+    if (invalidBWBlends.indexOf(blendModeString) > -1) {
+      return false;
+    }
   //   if (hslPalette[0][2] < 0.5) {
   //     if (blendModeString === '0-4' && options.dt < 0.5) {
   //       return false;
@@ -282,16 +282,16 @@ function validateOptions(options, i) {
   //   if (['4-2', '4-5'].indexOf(blendModeString) > -1 && options.dt < 0.5) {
   //     return false;
   //   }
-  // }
-  // else if (palette === 'Mono') {
+  }
+  else if (palette === 'Mono') {
   //   if (i > 0 && ['2-3', '2-5'].indexOf(blendModeString) > -1) {
   //     return false;
   //   }
   //   if (blendModeString === '3-2' && options.dt < 0.7) {
   //     return false;
   //   }
-  // }
-  // else if (palette === 'Analogous') {
+  }
+  else if (palette === 'Analogous') {
   //   if (['2-5'].indexOf(blendModeString) > -1) {
   //     return false;
   //   }
@@ -313,7 +313,7 @@ function validateOptions(options, i) {
   //   if (blendModeString === '4-5' && options.dt < 0.5) {
   //     return false;
   //   }
-  // }
+  }
   // if (blendModeString === '0-4' && options.dt < 0.3) {
   //   return false;
   // }
@@ -382,6 +382,7 @@ function onClick(event) {
       layers.map((layer) => {
         resetLayer(layer);
       });
+      core.uFrame.value = 0;
       break
     case 'regenerate':
       layers.map((layer) => {

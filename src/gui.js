@@ -1,4 +1,5 @@
 import {compositions, layerOptions, options, palettes} from "./config";
+import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import {layers, debug} from "./vars";
 
@@ -31,6 +32,7 @@ export const createLayerGUI = (gui, i) => {
         layers[i].mesh.visible = layerOptions[i].visible;
         layers[i].setOptions(layerOptions[i]);
         resetLayers();
+        core.uFrame.value = 0;
     }
     const resetLayers = () => {
         for (let i=0; i<layers.length; i++) {
