@@ -106,8 +106,8 @@ function createScene() {
       }, layerOptions[0])));
 
       for (let i=0; i<strokesPerLayer; i++) {
-        // todo: set fluidPass uniform values
         fluidPass.uniforms.uPos.value[i].set(FXRand.num(), FXRand.num());
+        fluidPass.uniforms.uLast.value[i].copy(fluidPass.uniforms.uPos.value[i]);
         fluidPass.uniforms.uTarget.value[i].set(FXRand.num(), FXRand.num());
         fluidPass.uniforms.uSpeed.value[i] = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
         fluidPass.isDown[i] = FXRand.bool();
