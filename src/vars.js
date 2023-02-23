@@ -3,7 +3,7 @@ import {chooseComposition, choosePalette, options} from "./config";
 import * as FXRand from "fxhash_lib/random";
 import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
 
-let palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars;
+let palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars;
 
 const initVars = () => {
     palette = choosePalette();
@@ -13,6 +13,8 @@ const initVars = () => {
     transparent = comp === 'cells';
     layers = [];
     strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
+    debug = new THREE.Group();
+    debug.visible = options.showDebug;
     labels = new THREE.Group();
     vars = {timeoutID: -1, numCells: 0};
 
@@ -23,6 +25,7 @@ const initVars = () => {
         colorW: FXRand.exp(0.1, 8),
     }
     window.$fxhashFeatures = features;
+    console.log(features);
 }
 
-export {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars};
+export {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars};

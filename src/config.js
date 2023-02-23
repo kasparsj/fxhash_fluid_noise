@@ -17,6 +17,7 @@ export const options = {
     minSpeed: 0.001,
     maxSpeed: 0.01,
     speedMult: 1,
+    showDebug: false,
     strokesRel: 'mirrorRand',
     maxCells: 9,
 };

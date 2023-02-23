@@ -7,8 +7,8 @@ import * as css2D from "fxhash_lib/css2D";
 import {generateColor} from "fxhash_lib/color";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
-import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars} from "./vars";
+import {width, height, renderer, scene, cam} from "fxhash_lib/core";
+import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars} from "./vars";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import * as mats from "fxhash_lib/materials";
@@ -32,7 +32,7 @@ function setup() {
     alpha: transparent,
   });
   core.init(initSettings);
-  //core.initLights(lightOptions);
+  //lights.init(lightOptions);
   css2D.init();
 
   if (devMode) {
@@ -41,6 +41,9 @@ function setup() {
     dev.createEffectsGui(effectOptions);
     dev.hideGuiSaveRow();
   }
+
+  cam.position.z = 1024;
+  core.lookAt(new THREE.Vector3(0, 0, 0));
 
   createScene();
 
@@ -53,77 +56,83 @@ function setup() {
 }
 
 function createScene() {
-  if (comp !== 'cells') {
-    scene.background = colors[0];
-  }
-  if (comp !== 'box') {
-    for (let i=0; i<features.layers; i++) {
-      addLayer(strokesPerLayer);
-    }
-  }
   switch (comp) {
     case 'cells':
-      hist = new FullScreenLayer({
-        type: THREE.HalfFloatType,
-        blending: THREE.CustomBlending,
-        transparent: true,
-      });
-      hist.composer.addPass(new RenderPass(scene, cam));
-      scene.add(hist.mesh);
-      requestCell();
+      createCellsComp();
       break;
     case 'box':
-      core.initControls(cam);
-      cam.position.x = 1024;
-      cam.position.y = 512;
-      cam.position.z = 1024;
-      core.lookAt(new THREE.Vector3(0, 0, 0));
-
-      layerOptions.push(generateOptions(0));
-
-      const mat = mats.fluidViewUV({
-        blending: layerOptions[0].blendModeView,
-      });
-
-      const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
-      //const box = core.createFSMesh(mat);
-      scene.add(box);
-      const edges = core.createEdges(box);
-      scene.add(edges);
-
-      materialFBO = new MaterialFBO({
-        type: THREE.HalfFloatType,
-      }, box.material);
-
-      const fluidPass = new FluidPass(mats.fluidPass({
-        blending: layerOptions[0].blendModePass,
-        transparent: true,
-      }), Object.assign({
-        numStrokes: strokesPerLayer,
-        bgColor: colors[0],
-      }, Object.assign({
-        maxIterations: options.maxIterations,
-      }, layerOptions[0])));
-
-      for (let i=0; i<strokesPerLayer; i++) {
-        fluidPass.uniforms.uPos.value[i].set(FXRand.num(), FXRand.num());
-        fluidPass.uniforms.uLast.value[i].copy(fluidPass.uniforms.uPos.value[i]);
-        fluidPass.uniforms.uTarget.value[i].set(FXRand.num(), FXRand.num());
-        fluidPass.uniforms.uSpeed.value[i] = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-        fluidPass.isDown[i] = FXRand.bool();
-      }
-
-      materialFBO.composer.addPass(fluidPass);
-
+      scene.background = colors[0];
+      createBoxComp();
+      break;
+    default:
+      scene.background = colors[0];
+      createDefaultComp();
       break;
   }
+  scene.add(debug);
+}
+
+function createDefaultComp() {
+  for (let i=0; i<features.layers; i++) {
+    addLayer(strokesPerLayer);
+  }
+}
+
+function createCellsComp() {
+  createDefaultComp();
+
+  hist = new FullScreenLayer({
+    type: THREE.HalfFloatType,
+    blending: THREE.SubtractiveBlending,
+    transparent: true,
+  });
+  hist.composer.addPass(new RenderPass(scene, cam));
+  scene.add(hist.mesh);
+  requestCell();
+}
+
+function createBoxComp() {
+  core.initControls(cam);
+
+  layerOptions.push(generateOptions(0));
+
+  const mat = mats.fluidViewUV({
+    blending: layerOptions[0].blendModeView,
+  });
+
+  const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
+  //const box = core.createFSMesh(mat);
+  scene.add(box);
+  const edges = core.createEdges(box);
+  scene.add(edges);
+
+  materialFBO = new MaterialFBO({
+    type: THREE.HalfFloatType,
+  }, box.material);
+
+  const fluidPass = new FluidPass(mats.fluidPass({
+    blending: layerOptions[0].blendModePass,
+    transparent: true,
+  }), Object.assign({
+    numStrokes: strokesPerLayer,
+    bgColor: colors[0],
+  }, Object.assign({
+    maxIterations: options.maxIterations,
+  }, layerOptions[0])));
+
+  for (let i=0; i<strokesPerLayer; i++) {
+    const stroke = createStroke(0, i);
+    fluidPass.initStroke(i, stroke);
+  }
+
+  materialFBO.composer.addPass(fluidPass);
 }
 
 function addLayer(numStrokes) {
   const i = layers.length;
   layerOptions.push(generateOptions(i));
   if (devMode) {
-    createLayerGUI(dev.gui, layers, i);
+    createLayerGUI(dev.gui, i);
   }
   const layer = createLayer(numStrokes);
   createStrokes(layer, i);
@@ -145,47 +154,52 @@ function createLayer(numStrokes) {
 function createStrokes(layer, i) {
   const numStrokes = layer.options.numStrokes;
   for (let j=0; j<numStrokes; j++) {
-    let stroke;
-    if (i === 0 || options.strokesRel === 'random') {
-      // first layer all strokes are random
-      const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-      const pos = new THREE.Vector2(FXRand.num(), FXRand.num());
-      const target = new THREE.Vector2(FXRand.num(), FXRand.num());
-      stroke = {
-        speed,
-        //isDown: FXRand.bool(),
-        pos,
-        target
-      };
-    }
-    else {
-      let sr = options.strokesRel;
-      if (sr === 'mirrorRand') {
-        sr = FXRand.choice(['mirror', 'mirrorX', 'mirrorY']);
-      }
-      switch (sr) {
-        case 'same':
-          stroke = layers[0].fluidPass.getStroke(j);
-          break;
-        case 'mirror':
-        case 'mirrorX':
-        case 'mirrorY':
-        default:
-          stroke = FluidPass[sr || 'mirror'](layers[0].fluidPass.getStroke(j));
-          break;
-      }
-    }
+    const stroke = createStroke(i, j);
     layer.fluidPass.initStroke(j, stroke);
   }
 }
 
+function createStroke(i, j) {
+  let stroke;
+  if (i === 0 || options.strokesRel === 'random') {
+    // first layer all strokes are random
+    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
+    const pos = new THREE.Vector2(FXRand.num(), FXRand.num());
+    const target = new THREE.Vector2(FXRand.num(), FXRand.num());
+    stroke = {
+      speed,
+      //isDown: FXRand.bool(),
+      pos,
+      target
+    };
+  }
+  else {
+    let sr = options.strokesRel;
+    if (sr === 'mirrorRand') {
+      sr = FXRand.choice(['mirror', 'mirrorX', 'mirrorY']);
+    }
+    switch (sr) {
+      case 'same':
+        stroke = layers[0].fluidPass.getStroke(j);
+        break;
+      case 'mirror':
+      case 'mirrorX':
+      case 'mirrorY':
+      default:
+        stroke = FluidPass[sr || 'mirror'](layers[0].fluidPass.getStroke(j));
+        break;
+    }
+  }
+  debug.add(core.createCross(core.toScreen(stroke.pos)));
+  return stroke;
+}
+
 function resetLayer(layer) {
-  layer.clear();
+  layer.reset();
   regenerateLayer(layer);
   for (let j=0; j<layer.options.numStrokes; j++) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     layer.fluidPass.uniforms.uSpeed.value[j] = speed;
-    layer.fluidPass.reset(j);
   }
   const color = generateColor(palette, hslPalette[0]);
   setLayerColor(layer, color);
@@ -206,8 +220,9 @@ function generateOptions(i) {
   let opts;
   do {
     const blendModePass = FXRand.int(0, i > 0 ? 4 : 5);
-    const blendModeView = comp === 'cells' ? 2 : FXRand.int(2, blendModePass === 3 ? 3 : 5);
+    const blendModeView = FXRand.int(2, blendModePass === 3 ? 3 : 5);
     opts = {
+      visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
       blendModePass,
       blendModeView,
       dt: FXRand.num(minDt[blendModePass] || 0.1, 0.3),
