@@ -81,12 +81,12 @@ function createScene() {
 
       layerOptions.push(generateOptions(0));
 
-      const mat = mats.fluidView({
+      const mat = mats.fluidViewUV({
         blending: layerOptions[0].blendModeView,
-        transparent: true,
       });
 
-      const box = new THREE.Mesh(new THREE.BoxGeometry(200, 200, 200), mat);
+      const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
+      //const box = core.createFSMesh(mat);
       scene.add(box);
       const edges = core.createEdges(box);
       scene.add(edges);
