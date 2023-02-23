@@ -12,8 +12,11 @@ import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars} from "./vars";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
+import * as mats from "fxhash_lib/materials";
+import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
+import {FluidPass} from "../../fxhash_lib/postprocessing/FluidPass";
 
-let hist;
+let hist, materialFBO;
 
 setup();
 
@@ -33,7 +36,6 @@ function setup() {
   css2D.init();
 
   if (devMode) {
-    //core.initControls(cam);
     dev.initHelpers();
     //dev.initLighting(lightOptions);
     dev.createEffectsGui(effectOptions);
@@ -51,19 +53,13 @@ function setup() {
 }
 
 function createScene() {
-  // cam.position.x = 1024;
-  // cam.position.y = 512;
-  // cam.position.z = 1024;
-  // core.lookAt(new THREE.Vector3(0, 0, 0));
-
   if (comp !== 'cells') {
     scene.background = colors[0];
   }
-
-  //scene.add(new THREE.Mesh(new THREE.BoxGeometry(100, 100, 100), new THREE.MeshBasicMaterial({color: new THREE.Color(1, 0, 0)})));
-
-  for (let i=0; i<features.layers; i++) {
-    addLayer(strokesPerLayer);
+  if (comp !== 'box') {
+    for (let i=0; i<features.layers; i++) {
+      addLayer(strokesPerLayer);
+    }
   }
   switch (comp) {
     case 'cells':
@@ -75,6 +71,50 @@ function createScene() {
       hist.composer.addPass(new RenderPass(scene, cam));
       scene.add(hist.mesh);
       requestCell();
+      break;
+    case 'box':
+      core.initControls(cam);
+      cam.position.x = 1024;
+      cam.position.y = 512;
+      cam.position.z = 1024;
+      core.lookAt(new THREE.Vector3(0, 0, 0));
+
+      layerOptions.push(generateOptions(0));
+
+      const mat = mats.fluidView({
+        blending: layerOptions[0].blendModeView,
+        transparent: true,
+      });
+
+      const box = new THREE.Mesh(new THREE.BoxGeometry(200, 200, 200), mat);
+      scene.add(box);
+      const edges = core.createEdges(box);
+      scene.add(edges);
+
+      materialFBO = new MaterialFBO({
+        type: THREE.HalfFloatType,
+      }, box.material);
+
+      const fluidPass = new FluidPass(mats.fluidPass({
+        blending: layerOptions[0].blendModePass,
+        transparent: true,
+      }), Object.assign({
+        numStrokes: strokesPerLayer,
+        bgColor: colors[0],
+      }, Object.assign({
+        maxIterations: options.maxIterations,
+      }, layerOptions[0])));
+
+      for (let i=0; i<strokesPerLayer; i++) {
+        // todo: set fluidPass uniform values
+        fluidPass.uniforms.uPos.value[i].set(FXRand.num(), FXRand.num());
+        fluidPass.uniforms.uTarget.value[i].set(FXRand.num(), FXRand.num());
+        fluidPass.uniforms.uSpeed.value[i] = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
+        fluidPass.isDown[i] = FXRand.bool();
+      }
+
+      materialFBO.composer.addPass(fluidPass);
+
       break;
   }
 }
@@ -109,10 +149,9 @@ function createStrokes(layer, i) {
     if (i === 0 || options.strokesRel === 'random') {
       // first layer all strokes are random
       const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-      const isDown = FXRand.bool();
       stroke = new FluidStroke(FXRand.num(), FXRand.num());
       stroke.speed = speed;
-      stroke.isDown = isDown;
+      stroke.isDown = FXRand.bool();
       stroke.target.set(FXRand.num(), FXRand.num());
     }
     else {
@@ -302,9 +341,14 @@ function requestCell() {
 function draw(event) {
   core.update();
   dev.update();
-  for (let i=0; i<layers.length; i++) {
-    if (layers[i].mesh.visible) {
-      layers[i].update();
+  if (comp === 'box') {
+    materialFBO.render();
+  }
+  else {
+    for (let i=0; i<layers.length; i++) {
+      if (layers[i].mesh.visible) {
+        layers[i].update();
+      }
     }
   }
   core.render();

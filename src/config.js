@@ -26,6 +26,7 @@ export const compositions = {
     regenerate: false,
     reset: false,
     addnew: false,
+    box: false,
 };
 
 export const palettes = {
