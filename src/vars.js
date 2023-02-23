@@ -22,7 +22,7 @@ const initVars = () => {
     features = {
         palette: palette,
         layers: FXRand.int(options.minLayers, options.maxLayers),
-        colorW: FXRand.exp(0.1, 8),
+        colorW: FXRand.exp(0.1, 1),
     }
     window.$fxhashFeatures = features;
     console.log(features);
