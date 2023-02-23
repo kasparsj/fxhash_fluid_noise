@@ -11,10 +11,9 @@ import {devMode, settings, options, layerOptions, lightOptions, effectOptions} f
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, labels, features, vars} from "./vars";
-import {RenderPingPong} from "../../fxhash_lib/RenderPingPong";
 import {FullScreenQuad} from "three/examples/jsm/postprocessing/Pass";
 
-let histPingPong, histMesh;
+let histFBO, histMesh;
 
 setup();
 
@@ -68,19 +67,15 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
-      histPingPong = new RenderPingPong(core.width, core.height, {
+      histFBO = core.createFBO(renderer, scene, cam, {
         minFilter: THREE.LinearFilter,
         magFilter: THREE.LinearFilter,
         depthBuffer: false,
       });
-      histMesh = (new FullScreenQuad())._mesh;
-      histMesh.material = mats.fullScreenMap({
+      histMesh = core.createFBOMesh(histFBO, {
         blending: THREE.CustomBlending,
         transparent: true,
-      }, {
-        map: histPingPong.texture,
       });
-      histMesh.frustumCulled = false;
       scene.add(histMesh);
       requestCell();
       break;
@@ -147,9 +142,9 @@ function createStrokes(layer, i) {
 }
 
 function renderToHist() {
-  histPingPong.render(renderer, scene, cam);
-  histPingPong.swap();
-  histMesh.material.uniforms.tMap.value = histPingPong.texture;
+  histFBO.render();
+  histFBO.swapBuffers();
+  histMesh.material.uniforms.tMap.value = histFBO.writeBuffer.texture;
   histMesh.material.needsUpdate = true;
 }
 
