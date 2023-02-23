@@ -210,7 +210,7 @@ function generateOptions(i) {
     opts = {
       blendModePass,
       blendModeView,
-      dt: FXRand.num(minDt[blendModePass], 1.0),
+      dt: FXRand.num(minDt[blendModePass] || 0.1, 0.3),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
       kappa: FXRand.num(0.1, 0.9),

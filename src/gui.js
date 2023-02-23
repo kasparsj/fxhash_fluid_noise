@@ -24,7 +24,6 @@ export const createLayerGUI = (gui, layers, i) => {
     const folder = gui.addFolder('Layer '+i);
     const updateLayer = () => {
         layers[i].setOptions(layerOptions[i]);
-        layers[i].initRenderer();
     }
     folder.add(layerOptions[i], 'blendModePass', 0, 5, 1).listen().onChange(updateLayer);
     folder.add(layerOptions[i], 'blendModeView', 2, 5, 1).listen().onChange(updateLayer);

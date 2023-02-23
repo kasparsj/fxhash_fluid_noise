@@ -60,6 +60,7 @@ export const effectOptions = {
     enabled: true,
     hBlur: 1 / window.innerWidth / 2,
     vBlur: 1 / window.innerHeight / 2,
+    film: false,
     noiseType: 'glsl-film-grain',
     noiseIntensity: 0.35,
     scanlinesIntensity: 0.25,
