@@ -10,8 +10,9 @@ import {devMode, settings, options, layerOptions, lightOptions, effectOptions} f
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, labels, features, vars} from "./vars";
+import {FullScreenLayer} from "../../fxhash_lib/postprocessing/FullScreenLayer";
 
-let histFBO, histMesh;
+let hist;
 
 setup();
 
@@ -65,16 +66,11 @@ function createScene() {
   }
   switch (comp) {
     case 'cells':
-      histFBO = core.createFBO(renderer, scene, cam, {
-        minFilter: THREE.LinearFilter,
-        magFilter: THREE.LinearFilter,
-        depthBuffer: false,
-      });
-      histMesh = core.createFSMapMesh(histFBO.writeBuffer.texture, {
+      hist = new FullScreenLayer({
         blending: THREE.CustomBlending,
         transparent: true,
       });
-      scene.add(histMesh);
+      scene.add(hist.mesh);
       requestCell();
       break;
   }
@@ -140,10 +136,7 @@ function createStrokes(layer, i) {
 }
 
 function renderToHist() {
-  histFBO.render();
-  histFBO.swapBuffers();
-  histMesh.material.uniforms.tMap.value = histFBO.writeBuffer.texture;
-  histMesh.material.needsUpdate = true;
+  hist.render();
 }
 
 function resetLayer(layer) {
