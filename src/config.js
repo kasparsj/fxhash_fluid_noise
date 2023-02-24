@@ -28,6 +28,7 @@ export const options = {
 
 export const compositions = {
     'default': true,
+    black: false,
     box: false,
 };
 

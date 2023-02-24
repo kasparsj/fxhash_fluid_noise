@@ -15,6 +15,7 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
+import blackFluidViewFrag from "./shaders/blackFluidView.frag";
 
 let materialFBO;
 
@@ -78,6 +79,7 @@ function createScene() {
       scene.background = colors[0];
       createBoxComp();
       break;
+    case 'black':
     default:
       createDefaultComp();
       if (!options.snapOverlay) {
@@ -159,6 +161,7 @@ function createLayer(numStrokes) {
   const i = layers.length;
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
+    zoom: comp === 'black' ? 10 : 1,
     maxIterations: options.maxIterations,
     //bgColor: colors[0],
     transparent: transparent,
@@ -168,6 +171,10 @@ function createLayer(numStrokes) {
     //minFilter: THREE.NearestFilter,
     //magFilter: THREE.NearestFilter,
   }));
+  if (comp === 'black') {
+    layers[i].viewMaterial.fragmentShader = blackFluidViewFrag;
+    layers[i].viewMaterial.needsUpdate = true;
+  }
   setLayerColor(layers[i], colors[1]);
   scene.add(layers[i].mesh);
   return layers[i];
@@ -227,8 +234,8 @@ function resetLayer(layer) {
 }
 
 function setLayerColor(layer, color) {
-  //layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
-  layer.color = new THREE.Vector4(10, 10, 10, 0.1);
+  layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
+  // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
 
