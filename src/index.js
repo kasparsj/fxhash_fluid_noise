@@ -83,7 +83,7 @@ function createScene() {
     default:
       createDefaultComp();
       if (!options.snapOverlay) {
-        scene.background = colors[0];
+        //scene.background = colors[0];
       }
       createSnapOverlay();
       scheduleRegenerate();
@@ -120,7 +120,6 @@ function createBoxComp() {
   });
 
   const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
-  //const box = core.createFSMesh(mat);
   scene.add(box);
   const edges = core.createEdges(box);
   scene.add(edges);
@@ -162,6 +161,7 @@ function createLayer(numStrokes) {
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
     zoom: comp === 'black' ? 10 : 1,
+    // zoom: 10,
     maxIterations: options.maxIterations,
     //bgColor: colors[0],
     transparent: transparent,
@@ -234,7 +234,8 @@ function resetLayer(layer) {
 }
 
 function setLayerColor(layer, color) {
-  layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
+  const m = 100;
+  layer.color = new THREE.Vector4(color.r*m, color.g*m, color.b*m, features.colorW);
   // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
@@ -255,10 +256,6 @@ function generateOptions(i) {
       visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
       blendModePass,
       blendModeView,
-      // dt: minDt[blendModePass],
-      // K: 0.2,
-      // nu: 0.5,
-      // kappa: 0.1,
       dt: FXRand.num(minDt[blendModePass] || 0.1, 1.0),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
@@ -269,18 +266,18 @@ function generateOptions(i) {
 }
 
 function validateOptions(options, i) {
-  // const blendModeString = options.blendModePass+'-'+options.blendModeView;
-  // if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
-  //   return false;
-  // }
-  // if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
-  //   return false;
-  // }
-  // if (palette === 'Analogous') {
-  //   if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
-  //     return false;
-  //   }
-  // }
+  const blendModeString = options.blendModePass+'-'+options.blendModeView;
+  if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
+    return false;
+  }
+  if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
+    return false;
+  }
+  if (palette === 'Analogous') {
+    if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
+      return false;
+    }
+  }
   return true;
 }
 
