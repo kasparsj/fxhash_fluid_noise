@@ -240,28 +240,40 @@ function setLayerColor(layer, color) {
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
 
-function regenerateLayer(layer) {
+function regenerateLayer(layer, blendModes = false) {
   const i = layers.indexOf(layer);
-  Object.assign(layerOptions[i], generateOptions(i));
+  if (blendModes) {
+    Object.assign(layerOptions[i], generateOptions(i));
+  }
+  else {
+    Object.assign(layerOptions[i], generateFluidOptions(layerOptions[i], i));
+  }
   layer.setOptions(layerOptions[i]);
 }
 
 function generateOptions(i) {
+  const blendModePass = FXRand.choice([0, 1, 2]);
+  const blendModeView = FXRand.choice([2, 5]);
+  const opts = {
+    visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
+    blendModePass,
+    blendModeView,
+  };
+  Object.assign(opts, generateFluidOptions(opts, i));
+  return opts;
+}
+
+function generateFluidOptions(options, i) {
   const minDt = [0.25, 0.25, 0.4, 0.1, 0.3, 0.1];
   let opts;
   do {
-    const blendModePass = FXRand.choice([0, 1, 2]);
-    const blendModeView = FXRand.choice([2, 5]);
     opts = {
-      visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
-      blendModePass,
-      blendModeView,
-      dt: FXRand.num(minDt[blendModePass] || 0.1, 1.0),
+      dt: FXRand.num(minDt[options.blendModePass] || 0.1, 1.0),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
       kappa: FXRand.num(0.1, 1.0),
     };
-  } while (!validateOptions(opts, i));
+  } while (!validateOptions(Object.assign({}, options, opts), i));
   return opts;
 }
 
@@ -283,7 +295,6 @@ function validateOptions(options, i) {
 
 const takeSnapshot = () => {
   if (options.snapOverlay) {
-    vars.numSnapshots++;
     vars.snapOverlay.render();
     vars.snapOverlay.composer.swapBuffers();
   }
@@ -300,6 +311,7 @@ function scheduleRegenerate() {
 }
 
 function regenerateCB() {
+  vars.numSnapshots++;
   takeSnapshot();
   layers.map((layer) => {
     regenerateLayer(layer);
@@ -312,6 +324,7 @@ function restart() {
   //core.togglePaused();
   initOptions();
   layers.map((layer) => {
+    regenerateLayer(layer, true),
     resetLayer(layer);
   });
   core.uFrame.value = 0;
@@ -346,7 +359,7 @@ function onClick(event) {
       break;
     case 'reset':
       layers.map((layer) => {
-        regenerateLayer(layer);
+        regenerateLayer(layer, true);
         resetLayer(layer);
       });
       core.uFrame.value = 0;
