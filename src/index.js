@@ -8,7 +8,7 @@ import {generateColor} from "fxhash_lib/color";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars} from "./vars";
+import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars} from "./vars";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import * as mats from "fxhash_lib/materials";
@@ -31,7 +31,7 @@ function setup() {
   initVars();
 
   const initSettings = Object.assign({}, settings, {
-    alpha: transparent,
+    alpha: true,
   });
   core.init(initSettings);
   //lights.init(lightOptions);
@@ -82,8 +82,8 @@ function createScene() {
     case 'black':
     default:
       createDefaultComp();
-      if (!options.snapOverlay) {
-        //scene.background = colors[0];
+      if (!options.snapOverlay && comp !== 'black') {
+        scene.background = colors[0];
       }
       createSnapOverlay();
       scheduleRegenerate();
@@ -125,7 +125,7 @@ function createBoxComp() {
   scene.add(edges);
 
   materialFBO = new MaterialFBO({
-    //type: THREE.HalfFloatType,
+    type: THREE.HalfFloatType,
   }, box.material);
 
   const fluidPass = new FluidPass(mats.fluidPass({
@@ -133,7 +133,6 @@ function createBoxComp() {
     transparent: true,
   }), Object.assign({
     numStrokes: strokesPerLayer,
-    //bgColor: colors[0],
   }, Object.assign({
     maxIterations: options.maxIterations,
   }, layerOptions[0])));
@@ -163,17 +162,16 @@ function createLayer(numStrokes) {
     zoom: comp === 'black' ? 10 : 1,
     // zoom: 10,
     maxIterations: options.maxIterations,
-    //bgColor: colors[0],
-    transparent: transparent,
+    transparent: comp !== 'box',
     opacity: options.opacity,
     generateMipmaps: false,
     type: THREE.HalfFloatType,
-    //minFilter: THREE.NearestFilter,
-    //magFilter: THREE.NearestFilter,
+    // minFilter: THREE.NearestFilter,
+    // magFilter: THREE.NearestFilter,
   }));
   if (comp === 'black') {
-    layers[i].viewMaterial.fragmentShader = blackFluidViewFrag;
-    layers[i].viewMaterial.needsUpdate = true;
+    layers[i].material.fragmentShader = blackFluidViewFrag;
+    layers[i].material.needsUpdate = true;
   }
   setLayerColor(layers[i], colors[1]);
   scene.add(layers[i].mesh);
@@ -234,7 +232,7 @@ function resetLayer(layer) {
 }
 
 function setLayerColor(layer, color) {
-  const m = 100;
+  const m = 10;
   layer.color = new THREE.Vector4(color.r*m, color.g*m, color.b*m, features.colorW);
   // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
@@ -312,6 +310,7 @@ function scheduleRegenerate() {
 
 function regenerateCB() {
   vars.numSnapshots++;
+  console.log(vars.numSnapshots);
   takeSnapshot();
   layers.map((layer) => {
     regenerateLayer(layer);
