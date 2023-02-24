@@ -68,8 +68,8 @@ function initOptions() {
     options.snapBlending = THREE.SubtractiveBlending;
     // options.snapBlending = THREE.CustomBlending;
   }
-  if (!options.hasOwnProperty('maxSnapshots')) {
-    options.maxSnapshots = FXRand.int(5, 9);
+  if (!options.hasOwnProperty('maxChanges')) {
+    options.maxChanges = FXRand.int(5, 9);
   }
 }
 
@@ -86,7 +86,7 @@ function createScene() {
         scene.background = colors[0];
       }
       createSnapOverlay();
-      scheduleRegenerate();
+      scheduleChange();
       break;
   }
   scene.add(debug);
@@ -97,7 +97,7 @@ function createSnapOverlay() {
     type: THREE.HalfFloatType,
     blending: options.snapBlending,
     generateMipmaps: false,
-    // transparent: true,
+    transparent: true,
   });
   vars.snapOverlay.composer.addPass(new RenderPass(scene, cam));
   vars.snapOverlay.mesh.visible = options.snapOverlay;
@@ -232,13 +232,13 @@ function resetLayer(layer) {
 }
 
 function setLayerColor(layer, color) {
-  const m = 10;
+  const m = 256;
   layer.color = new THREE.Vector4(color.r*m, color.g*m, color.b*m, features.colorW);
   // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
 
-function regenerateLayer(layer, blendModes = false) {
+function regenerateLayerOptions(layer, blendModes = false) {
   const i = layers.indexOf(layer);
   if (blendModes) {
     Object.assign(layerOptions[i], generateOptions(i));
@@ -298,32 +298,34 @@ const takeSnapshot = () => {
   }
 }
 
-function scheduleRegenerate() {
-  if (vars.numSnapshots < options.maxSnapshots) {
-    core.schedule(regenerateCB, FXRand.int(500, 7000));
+function scheduleChange() {
+  if (vars.numSnapshots < options.maxChanges) {
+    core.schedule(changeCB, 7000);
   }
   else {
-    //core.togglePaused();
-    core.schedule(restart, 30000);
+    core.schedule(() => {
+      core.togglePaused();
+      setTimeout(restart, 5000);
+    }, 7000);
   }
 }
 
-function regenerateCB() {
+function changeCB() {
   vars.numSnapshots++;
   console.log(vars.numSnapshots);
   takeSnapshot();
   layers.map((layer) => {
-    regenerateLayer(layer);
+    regenerateLayerOptions(layer);
   });
   core.callbacks.length = 0;
-  scheduleRegenerate();
+  scheduleChange();
 }
 
 function restart() {
-  //core.togglePaused();
+  core.togglePaused();
   initOptions();
   layers.map((layer) => {
-    regenerateLayer(layer, true),
+    regenerateLayerOptions(layer, true),
     resetLayer(layer);
   });
   core.uFrame.value = 0;
@@ -332,7 +334,7 @@ function restart() {
     vars.snapOverlay.clear();
   }
   vars.numSnapshots = 0;
-  scheduleRegenerate();
+  scheduleChange();
 }
 
 function draw(event) {
@@ -358,13 +360,13 @@ function onClick(event) {
       break;
     case 'reset':
       layers.map((layer) => {
-        regenerateLayer(layer, true);
+        regenerateLayerOptions(layer, true);
         resetLayer(layer);
       });
       core.uFrame.value = 0;
       break
     case 'regenerate':
-      regenerateCB();
+      changeCB();
       break;
   }
 }

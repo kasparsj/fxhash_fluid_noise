@@ -21,8 +21,9 @@ export const options = {
     strokesRel: 'mirrorRand',
     behaviour: 'regenerate',
     snapOverlay: false,
-    //snapBlending: 3,
-    maxSnapshots: 9,
+    snapBlending: 3,
+    snapOpacity: 3,
+    maxChanges: 3,
     showDebug: false,
 };
 

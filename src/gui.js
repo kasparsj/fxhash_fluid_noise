@@ -10,6 +10,12 @@ export const createGUI = (gui) => {
         if (options.hasOwnProperty('snapOverlay')) {
             vars.snapOverlay.mesh.visible = options.snapOverlay;
         }
+        if (options.hasOwnProperty('snapBlending')) {
+            vars.snapOverlay.mesh.material.blending = options.snapBlending;
+        }
+        if (options.hasOwnProperty('snapOpacity')) {
+            vars.snapOverlay.mesh.material.opacity = options.snapOpacity;
+        }
     }
 
     const folder = gui.addFolder('Options');
@@ -32,14 +38,17 @@ export const createGUI = (gui) => {
     if (options.hasOwnProperty('behaviour')) {
         folder.add(options, 'behaviour', ['regenerate', 'reset', 'addnew']);
     }
-    if (options.hasOwnProperty('snapBlending')) {
-        folder.add(options, 'snapBlending', 3, 5, 1);
+    if (options.hasOwnProperty('maxChanges')) {
+        folder.add(options, 'maxChanges', 3, 20, 1);
     }
-    if (options.hasOwnProperty('maxSnapshots')) {
-        folder.add(options, 'maxSnapshots', 5, 20, 1);
+    if (options.hasOwnProperty('snapBlending')) {
+        folder.add(options, 'snapBlending', 1, 5, 1).onChange(onChange);
+    }
+    if (options.hasOwnProperty('snapOpacity')) {
+        folder.add(options, 'snapOpacity', 0, 1.0, 0.01).onChange(onChange);
     }
     if (options.hasOwnProperty('snapOverlay')) {
-        folder.add(options, 'snapOverlay');
+        folder.add(options, 'snapOverlay').onChange(onChange);
     }
     if (options.hasOwnProperty('showDebug')) {
         folder.add(options, 'showDebug').onChange(onChange);
