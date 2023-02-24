@@ -32,6 +32,9 @@ export const createGUI = (gui) => {
     if (options.hasOwnProperty('maxCells')) {
         folder.add(options, 'maxCells', 5, 20, 1);
     }
+    if (options.hasOwnProperty('cellsHist')) {
+        folder.add(options, 'cellsHist');
+    }
     if (options.hasOwnProperty('showDebug')) {
         folder.add(options, 'showDebug').onChange(onChange);
     }

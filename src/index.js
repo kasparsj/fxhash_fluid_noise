@@ -16,7 +16,7 @@ import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "../../fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
 
-let hist, materialFBO;
+let cellsHist, materialFBO;
 
 setup();
 
@@ -70,7 +70,6 @@ function initOptions() {
   if (!options.hasOwnProperty('maxCells')) {
     options.maxCells = FXRand.int(5, 9);
   }
-  console.log(options);
 }
 
 function createScene() {
@@ -99,15 +98,17 @@ function createDefaultComp() {
 function createCellsComp() {
   createDefaultComp();
 
-  hist = new FullScreenLayer({
-    //type: THREE.HalfFloatType,
-    blending: options.cellsBlending,
-    generateMipmaps: false,
-    // transparent: true,
-  });
-  hist.composer.addPass(new RenderPass(scene, cam));
-  //scene.add(hist.mesh);
-  requestCell();
+  if (options.cellsHist) {
+    cellsHist = new FullScreenLayer({
+      type: THREE.HalfFloatType,
+      blending: options.cellsBlending,
+      generateMipmaps: false,
+      // transparent: true,
+    });
+    cellsHist.composer.addPass(new RenderPass(scene, cam));
+    scene.add(cellsHist.mesh);
+  }
+  scheduleCell();
 }
 
 function createBoxComp() {
@@ -134,7 +135,7 @@ function createBoxComp() {
     transparent: true,
   }), Object.assign({
     numStrokes: strokesPerLayer,
-    bgColor: colors[0],
+    //bgColor: colors[0],
   }, Object.assign({
     maxIterations: options.maxIterations,
   }, layerOptions[0])));
@@ -162,7 +163,7 @@ function createLayer(numStrokes) {
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
     maxIterations: options.maxIterations,
-    bgColor: colors[0],
+    //bgColor: colors[0],
     transparent: transparent,
     opacity: options.opacity,
     generateMipmaps: false,
@@ -229,7 +230,9 @@ function resetLayer(layer) {
 }
 
 function setLayerColor(layer, color) {
-  layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
+  //layer.color = new THREE.Vector4(color.r*256, color.g*256, color.b*256, features.colorW);
+  layer.color = new THREE.Vector4(10, 10, 10, 0.1);
+  // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
 
 function regenerateLayer(layer) {
@@ -279,38 +282,41 @@ function validateOptions(options, i) {
 
 const createCell = () => {
   vars.numCells++;
-  hist.render();
-  hist.composer.swapBuffers();
+  if (options.cellsHist) {
+    cellsHist.render();
+    cellsHist.composer.swapBuffers();
+  }
   layers.map((layer) => {
     regenerateLayer(layer);
   });
 }
 
-function requestCell() {
-  if (vars.timeoutID > 0) {
-    clearTimeout(vars.timeoutID);
-    createCell();
-  }
+function scheduleCell() {
   if (vars.numCells < options.maxCells) {
-    vars.timeoutID = setTimeout(requestCell, FXRand.int(500, 7000));
+    core.schedule(() => {
+      createCell();
+      scheduleCell();
+    }, FXRand.int(500, 7000));
   }
   else {
     //core.togglePaused();
-    setTimeout(newCell, 30000);
+    core.schedule(newCell, 30000);
   }
 }
 
 function newCell() {
   //core.togglePaused();
   initOptions();
-  hist.material.blending = options.cellsBlending;
   layers.map((layer) => {
     resetLayer(layer);
   });
   core.uFrame.value = 0;
-  hist.clear();
+  if (options.cellsHist) {
+    cellsHist.material.blending = options.cellsBlending;
+    cellsHist.clear();
+  }
   vars.numCells = 0;
-  requestCell();
+  scheduleCell();
 }
 
 function draw(event) {
@@ -348,7 +354,8 @@ function onClick(event) {
       });
       break;
     case 'cells':
-      requestCell();
+      createCell();
+      scheduleCell();
       break
   }
 }

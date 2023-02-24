@@ -9,19 +9,20 @@ export const settings = {
 };
 
 export const options = {
-    minLayers: 2,
-    maxLayers: 3,
+    minLayers: 5,
+    maxLayers: 5,
     opacity: 1.0,
     minStrokes: 1,
     maxStrokes: 2, // iOS can do max 22
     maxIterations: 10,
     minSpeed: 0.001,
     maxSpeed: 0.01,
-    speedMult: 1,
+    // speedMult: 1,
     showDebug: false,
     strokesRel: 'mirrorRand',
     //cellsBlending: 3,
-    //maxCells: 9,
+    cellsHist: false,
+    maxCells: 9,
 };
 
 export const compositions = {
