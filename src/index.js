@@ -26,6 +26,7 @@ function setup() {
     createGUI(dev.gui);
   }
 
+  initOptions();
   initVars();
 
   const initSettings = Object.assign({}, settings, {
@@ -47,12 +48,29 @@ function setup() {
 
   createScene();
 
-  effects.init(effectOptions);
+  effects.init(Object.assign({
+    colorifyColor: new THREE.Color(0xFFD700),
+  }, effectOptions));
   core.animate();
 
   addEventListeners();
 
   fxpreview();
+}
+
+function initOptions() {
+  if (!options.hasOwnProperty('speedMult')) {
+    options.speedMult = FXRand.num(0.1, 10);
+  }
+  if (!options.hasOwnProperty('cellsBlending')) {
+    //options.cellsBlending = FXRand.choice([3, 5]);
+    options.cellsBlending = THREE.SubtractiveBlending;
+    // options.cellsBlending = THREE.CustomBlending;
+  }
+  if (!options.hasOwnProperty('maxCells')) {
+    options.maxCells = FXRand.int(5, 9);
+  }
+  console.log(options);
 }
 
 function createScene() {
@@ -82,12 +100,13 @@ function createCellsComp() {
   createDefaultComp();
 
   hist = new FullScreenLayer({
-    type: THREE.HalfFloatType,
-    blending: THREE.SubtractiveBlending,
-    transparent: true,
+    //type: THREE.HalfFloatType,
+    blending: options.cellsBlending,
+    generateMipmaps: false,
+    // transparent: true,
   });
   hist.composer.addPass(new RenderPass(scene, cam));
-  scene.add(hist.mesh);
+  //scene.add(hist.mesh);
   requestCell();
 }
 
@@ -107,7 +126,7 @@ function createBoxComp() {
   scene.add(edges);
 
   materialFBO = new MaterialFBO({
-    type: THREE.HalfFloatType,
+    //type: THREE.HalfFloatType,
   }, box.material);
 
   const fluidPass = new FluidPass(mats.fluidPass({
@@ -145,6 +164,11 @@ function createLayer(numStrokes) {
     maxIterations: options.maxIterations,
     bgColor: colors[0],
     transparent: transparent,
+    opacity: options.opacity,
+    generateMipmaps: false,
+    type: THREE.HalfFloatType,
+    //minFilter: THREE.NearestFilter,
+    //magFilter: THREE.NearestFilter,
   }));
   setLayerColor(layers[i], colors[1]);
   scene.add(layers[i].mesh);
@@ -196,7 +220,6 @@ function createStroke(i, j) {
 
 function resetLayer(layer) {
   layer.reset();
-  regenerateLayer(layer);
   for (let j=0; j<layer.options.numStrokes; j++) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     layer.fluidPass.uniforms.uSpeed.value[j] = speed;
@@ -225,29 +248,32 @@ function generateOptions(i) {
       visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
       blendModePass,
       blendModeView,
+      // dt: minDt[blendModePass],
+      // K: 0.2,
+      // nu: 0.5,
+      // kappa: 0.1,
       dt: FXRand.num(minDt[blendModePass] || 0.1, 1.0),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
-      kappa: FXRand.num(0.1, 0.9),
+      kappa: FXRand.num(0.1, 1.0),
     };
   } while (!validateOptions(opts, i));
   return opts;
 }
 
 function validateOptions(options, i) {
-  const blendModeString = options.blendModePass+'-'+options.blendModeView;
-  console.log((options.dt + options.kappa/1.5), Math.min(1.0, 0.6 * Math.max(features.colorW, 1.0)))
-  if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.6 * Math.max(features.colorW, 1.0))) {
-    return false;
-  }
-  if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
-    return false;
-  }
-  if (palette === 'Analogous') {
-    if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
-      return false;
-    }
-  }
+  // const blendModeString = options.blendModePass+'-'+options.blendModeView;
+  // if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
+  //   return false;
+  // }
+  // if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
+  //   return false;
+  // }
+  // if (palette === 'Analogous') {
+  //   if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
+  //     return false;
+  //   }
+  // }
   return true;
 }
 
@@ -269,8 +295,22 @@ function requestCell() {
     vars.timeoutID = setTimeout(requestCell, FXRand.int(500, 7000));
   }
   else {
-    // todo: add diagonal animation effect
+    //core.togglePaused();
+    setTimeout(newCell, 30000);
   }
+}
+
+function newCell() {
+  //core.togglePaused();
+  initOptions();
+  hist.material.blending = options.cellsBlending;
+  layers.map((layer) => {
+    resetLayer(layer);
+  });
+  core.uFrame.value = 0;
+  hist.clear();
+  vars.numCells = 0;
+  requestCell();
 }
 
 function draw(event) {
@@ -296,6 +336,7 @@ function onClick(event) {
       break;
     case 'reset':
       layers.map((layer) => {
+        regenerateLayer(layer);
         resetLayer(layer);
       });
       core.uFrame.value = 0;

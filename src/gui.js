@@ -12,15 +12,29 @@ export const createGUI = (gui) => {
     const folder = gui.addFolder('Options');
     folder.add(options, 'minLayers', 1, 5, 1);
     folder.add(options, 'maxLayers', 1, 5, 1);
+    if (options.hasOwnProperty('opacity')) {
+        folder.add(options, 'opacity', 0, 1, 0.01);
+    }
     folder.add(options, 'minStrokes', 1, 22, 1);
     folder.add(options, 'maxStrokes', 1, 22, 1);
     folder.add(options, 'strokesRel', ['same', 'mirror', 'mirrorX', 'mirrorY', 'mirrorRand', 'random']);
-    folder.add(options, 'maxCells', 5, 20, 1);
     folder.add(options, 'minSpeed', 0.001, 0.01, 0.001).listen();
     folder.add(options, 'maxSpeed', 0.01, 0.1, 0.001).listen();
-    folder.add(options, 'speedMult', 0.1, 10, 0.1).listen();
-    folder.add(options, 'maxIterations', 1, 20, 1);
-    folder.add(options, 'showDebug').onChange(onChange);
+    if (options.hasOwnProperty('speedMult')) {
+        folder.add(options, 'speedMult', 0.1, 10, 0.1).listen();
+    }
+    if (options.hasOwnProperty('maxIterations')) {
+        folder.add(options, 'maxIterations', 1, 20, 1);
+    }
+    if (options.hasOwnProperty('cellsBlending')) {
+        folder.add(options, 'cellsBlending', 3, 5, 1);
+    }
+    if (options.hasOwnProperty('maxCells')) {
+        folder.add(options, 'maxCells', 5, 20, 1);
+    }
+    if (options.hasOwnProperty('showDebug')) {
+        folder.add(options, 'showDebug').onChange(onChange);
+    }
 
     dev.createCheckBoxGui(compositions, 'Compositions');
     dev.createCheckBoxGui(palettes, 'Palettes');

@@ -11,6 +11,7 @@ export const settings = {
 export const options = {
     minLayers: 2,
     maxLayers: 3,
+    opacity: 1.0,
     minStrokes: 1,
     maxStrokes: 2, // iOS can do max 22
     maxIterations: 10,
@@ -19,7 +20,8 @@ export const options = {
     speedMult: 1,
     showDebug: false,
     strokesRel: 'mirrorRand',
-    maxCells: 9,
+    //cellsBlending: 3,
+    //maxCells: 9,
 };
 
 export const compositions = {
@@ -59,17 +61,23 @@ export const lightOptions = {
 
 export const effectOptions = {
     enabled: true,
-    hBlur: 1 / window.innerWidth / 2,
-    vBlur: 1 / window.innerHeight / 2,
+    gammaCorrection: false,
+    bloom: 0,
+    //hBlur: 1 / window.innerWidth / 2,
+    //vBlur: 1 / window.innerHeight / 2,
     film: false,
     noiseType: 'glsl-film-grain',
     noiseIntensity: 0.35,
     scanlinesIntensity: 0.25,
     scanlinesCount: 0,
     grayscale: true,
-    dotScreen: false,
-    dotScale: 0,
-    rgbShift: 0,
+    //dotScreen: false,
+    //dotScale: 0,
+    //rgbShift: 0,
+    sepia: 0,
+    fxaa: true,
+    //bleach: 0,
+    //colorify: false,
     //pixelate: false,
 };
 
