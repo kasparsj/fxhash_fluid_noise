@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {chooseComposition, choosePalette, options} from "./config";
 import * as FXRand from "fxhash_lib/random";
-import {generateHSLPalette, hsl2Color} from "../../fxhash_lib/color";
+import {generateHSLPalette, hsl2Color} from "fxhash_lib/color";
 
 let palette, hslPalette, colors, comp, transparent, layers, strokesPerLayer, debug, labels, features, vars;
 
@@ -16,7 +16,7 @@ const initVars = () => {
     debug = new THREE.Group();
     debug.visible = options.showDebug;
     labels = new THREE.Group();
-    vars = {timeoutID: -1, numCells: 0};
+    vars = {numSnapshots: 0, snapOverlay: null};
 
     // Feature generation
     features = {

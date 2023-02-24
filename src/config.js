@@ -18,18 +18,16 @@ export const options = {
     minSpeed: 0.001,
     maxSpeed: 0.01,
     // speedMult: 1,
-    showDebug: false,
     strokesRel: 'mirrorRand',
-    //cellsBlending: 3,
-    cellsHist: false,
-    maxCells: 9,
+    behaviour: 'regenerate',
+    snapOverlay: false,
+    //snapBlending: 3,
+    maxSnapshots: 9,
+    showDebug: false,
 };
 
 export const compositions = {
-    cells: true,
-    regenerate: false,
-    reset: false,
-    addnew: false,
+    'default': true,
     box: false,
 };
 

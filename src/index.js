@@ -13,10 +13,10 @@ import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
-import {FluidPass} from "../../fxhash_lib/postprocessing/FluidPass";
+import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
 
-let cellsHist, materialFBO;
+let materialFBO;
 
 setup();
 
@@ -62,53 +62,50 @@ function initOptions() {
   if (!options.hasOwnProperty('speedMult')) {
     options.speedMult = FXRand.num(0.1, 10);
   }
-  if (!options.hasOwnProperty('cellsBlending')) {
-    //options.cellsBlending = FXRand.choice([3, 5]);
-    options.cellsBlending = THREE.SubtractiveBlending;
-    // options.cellsBlending = THREE.CustomBlending;
+  if (!options.hasOwnProperty('snapBlending')) {
+    //options.snapBlending = FXRand.choice([3, 5]);
+    options.snapBlending = THREE.SubtractiveBlending;
+    // options.snapBlending = THREE.CustomBlending;
   }
-  if (!options.hasOwnProperty('maxCells')) {
-    options.maxCells = FXRand.int(5, 9);
+  if (!options.hasOwnProperty('maxSnapshots')) {
+    options.maxSnapshots = FXRand.int(5, 9);
   }
 }
 
 function createScene() {
   switch (comp) {
-    case 'cells':
-      createCellsComp();
-      break;
     case 'box':
       scene.background = colors[0];
       createBoxComp();
       break;
     default:
-      scene.background = colors[0];
       createDefaultComp();
+      if (!options.snapOverlay) {
+        scene.background = colors[0];
+      }
+      createSnapOverlay();
+      scheduleRegenerate();
       break;
   }
   scene.add(debug);
+}
+
+function createSnapOverlay() {
+  vars.snapOverlay = new FullScreenLayer({
+    type: THREE.HalfFloatType,
+    blending: options.snapBlending,
+    generateMipmaps: false,
+    // transparent: true,
+  });
+  vars.snapOverlay.composer.addPass(new RenderPass(scene, cam));
+  vars.snapOverlay.mesh.visible = options.snapOverlay;
+  scene.add(vars.snapOverlay.mesh);
 }
 
 function createDefaultComp() {
   for (let i=0; i<features.layers; i++) {
     addLayer(strokesPerLayer);
   }
-}
-
-function createCellsComp() {
-  createDefaultComp();
-
-  if (options.cellsHist) {
-    cellsHist = new FullScreenLayer({
-      type: THREE.HalfFloatType,
-      blending: options.cellsBlending,
-      generateMipmaps: false,
-      // transparent: true,
-    });
-    cellsHist.composer.addPass(new RenderPass(scene, cam));
-    scene.add(cellsHist.mesh);
-  }
-  scheduleCell();
 }
 
 function createBoxComp() {
@@ -280,43 +277,46 @@ function validateOptions(options, i) {
   return true;
 }
 
-const createCell = () => {
-  vars.numCells++;
-  if (options.cellsHist) {
-    cellsHist.render();
-    cellsHist.composer.swapBuffers();
+const takeSnapshot = () => {
+  if (options.snapOverlay) {
+    vars.numSnapshots++;
+    vars.snapOverlay.render();
+    vars.snapOverlay.composer.swapBuffers();
   }
-  layers.map((layer) => {
-    regenerateLayer(layer);
-  });
 }
 
-function scheduleCell() {
-  if (vars.numCells < options.maxCells) {
-    core.schedule(() => {
-      createCell();
-      scheduleCell();
-    }, FXRand.int(500, 7000));
+function scheduleRegenerate() {
+  if (vars.numSnapshots < options.maxSnapshots) {
+    core.schedule(regenerateCB, FXRand.int(500, 7000));
   }
   else {
     //core.togglePaused();
-    core.schedule(newCell, 30000);
+    core.schedule(restart, 30000);
   }
 }
 
-function newCell() {
+function regenerateCB() {
+  takeSnapshot();
+  layers.map((layer) => {
+    regenerateLayer(layer);
+  });
+  core.callbacks.length = 0;
+  scheduleRegenerate();
+}
+
+function restart() {
   //core.togglePaused();
   initOptions();
   layers.map((layer) => {
     resetLayer(layer);
   });
   core.uFrame.value = 0;
-  if (options.cellsHist) {
-    cellsHist.material.blending = options.cellsBlending;
-    cellsHist.clear();
+  if (options.snapOverlay) {
+    vars.snapOverlay.material.blending = options.snapBlending;
+    vars.snapOverlay.clear();
   }
-  vars.numCells = 0;
-  scheduleCell();
+  vars.numSnapshots = 0;
+  scheduleRegenerate();
 }
 
 function draw(event) {
@@ -336,7 +336,7 @@ function draw(event) {
 }
 
 function onClick(event) {
-  switch (comp) {
+  switch (options.behaviour) {
     case 'addnew':
       addLayer(strokesPerLayer);
       break;
@@ -348,15 +348,8 @@ function onClick(event) {
       core.uFrame.value = 0;
       break
     case 'regenerate':
-      layers.map((layer) => {
-        //layer.composer.swapBuffers();
-        regenerateLayer(layer);
-      });
+      regenerateCB();
       break;
-    case 'cells':
-      createCell();
-      scheduleCell();
-      break
   }
 }
 

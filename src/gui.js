@@ -1,12 +1,15 @@
 import {compositions, layerOptions, options, palettes} from "./config";
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
-import {layers, debug} from "./vars";
+import {layers, debug, vars} from "./vars";
 
 export const createGUI = (gui) => {
     gui.remember(options);
     const onChange = () => {
         debug.visible = options.showDebug;
+        if (options.hasOwnProperty('snapOverlay')) {
+            vars.snapOverlay.mesh.visible = options.snapOverlay;
+        }
     }
 
     const folder = gui.addFolder('Options');
@@ -26,14 +29,17 @@ export const createGUI = (gui) => {
     if (options.hasOwnProperty('maxIterations')) {
         folder.add(options, 'maxIterations', 1, 20, 1);
     }
-    if (options.hasOwnProperty('cellsBlending')) {
-        folder.add(options, 'cellsBlending', 3, 5, 1);
+    if (options.hasOwnProperty('behaviour')) {
+        folder.add(options, 'behaviour', ['regenerate', 'reset', 'addnew']);
     }
-    if (options.hasOwnProperty('maxCells')) {
-        folder.add(options, 'maxCells', 5, 20, 1);
+    if (options.hasOwnProperty('snapBlending')) {
+        folder.add(options, 'snapBlending', 3, 5, 1);
     }
-    if (options.hasOwnProperty('cellsHist')) {
-        folder.add(options, 'cellsHist');
+    if (options.hasOwnProperty('maxSnapshots')) {
+        folder.add(options, 'maxSnapshots', 5, 20, 1);
+    }
+    if (options.hasOwnProperty('snapOverlay')) {
+        folder.add(options, 'snapOverlay');
     }
     if (options.hasOwnProperty('showDebug')) {
         folder.add(options, 'showDebug').onChange(onChange);
