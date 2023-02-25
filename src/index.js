@@ -15,7 +15,8 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
-import blackFluidViewFrag from "./shaders/blackFluidView.frag";
+import blackFluidViewFrag from "fxhash_lib/shaders/blackFluidView.frag";
+import colorFluidViewFrag from "fxhash_lib/shaders/colorFluidView.frag";
 
 let materialFBO;
 
@@ -157,23 +158,27 @@ function addLayer(numStrokes) {
 
 function createLayer(numStrokes) {
   const i = layers.length;
+  const zoom = comp === 'black' ? 10 : FXRand.exp(0.1, 10.0);
+  //const filter = zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
+  const filter = THREE.LinearFilter;
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
-    zoom: comp === 'black' ? 10 : 1,
+    zoom: zoom,
     // zoom: 10,
     maxIterations: options.maxIterations,
     transparent: comp !== 'box',
     opacity: options.opacity,
     generateMipmaps: false,
     type: THREE.HalfFloatType,
-    // minFilter: THREE.NearestFilter,
-    // magFilter: THREE.NearestFilter,
+    minFilter: filter,
+    magFilter: filter,
+    fragmentShader: colorFluidViewFrag,
   }));
   if (comp === 'black') {
     layers[i].material.fragmentShader = blackFluidViewFrag;
     layers[i].material.needsUpdate = true;
   }
-  setLayerColor(layers[i], colors[1]);
+  setLayerColor(layers[i]);
   scene.add(layers[i].mesh);
   return layers[i];
 }
@@ -227,13 +232,15 @@ function resetLayer(layer) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     layer.fluidPass.uniforms.uSpeed.value[j] = speed;
   }
-  const color = generateColor(palette, hslPalette[0]);
-  setLayerColor(layer, color);
+  const i = layers.indexOf(layer);
+  colors[i] = generateColor(palette, hslPalette[0]);
+  setLayerColor(layer);
 }
 
-function setLayerColor(layer, color) {
-  const m = 256;
-  layer.color = new THREE.Vector4(color.r*m, color.g*m, color.b*m, features.colorW);
+function setLayerColor(layer) {
+  const i = layers.indexOf(layer);
+  const color = i < colors.length ? colors[i] : colors[1];
+  layer.color = new THREE.Vector4(color.r, color.g, color.b, features.colorW);
   // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
@@ -262,11 +269,10 @@ function generateOptions(i) {
 }
 
 function generateFluidOptions(options, i) {
-  const minDt = [0.25, 0.25, 0.4, 0.1, 0.3, 0.1];
   let opts;
   do {
     opts = {
-      dt: FXRand.num(minDt[options.blendModePass] || 0.1, 1.0),
+      dt: FXRand.num(0.1, 1.0),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
       kappa: FXRand.num(0.1, 1.0),
@@ -299,20 +305,20 @@ const takeSnapshot = () => {
 }
 
 function scheduleChange() {
-  if (vars.numSnapshots < options.maxChanges) {
+  if (vars.numChanges < options.maxChanges) {
     core.schedule(changeCB, 7000);
   }
   else {
     core.schedule(() => {
       core.togglePaused();
-      setTimeout(restart, 5000);
+      setTimeout(restart, 10000);
     }, 7000);
   }
 }
 
 function changeCB() {
-  vars.numSnapshots++;
-  console.log(vars.numSnapshots);
+  vars.numChanges++;
+  console.log(vars.numChanges);
   takeSnapshot();
   layers.map((layer) => {
     regenerateLayerOptions(layer);
@@ -333,7 +339,7 @@ function restart() {
     vars.snapOverlay.material.blending = options.snapBlending;
     vars.snapOverlay.clear();
   }
-  vars.numSnapshots = 0;
+  vars.numChanges = 0;
   scheduleChange();
 }
 

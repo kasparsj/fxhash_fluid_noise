@@ -29,7 +29,7 @@ export const options = {
 
 export const compositions = {
     'default': true,
-    black: false,
+    black: true,
     box: false,
 };
 
