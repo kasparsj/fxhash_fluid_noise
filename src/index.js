@@ -15,8 +15,8 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
-import blackFluidViewFrag from "fxhash_lib/shaders/blackFluidView.frag";
-import colorFluidViewFrag from "fxhash_lib/shaders/colorFluidView.frag";
+import blackFluidViewFrag from "fxhash_lib/shaders/fluid/blackFluidView.frag";
+import colorFluidViewFrag from "fxhash_lib/shaders/fluid/colorFluidView.frag";
 
 let materialFBO;
 
@@ -80,10 +80,12 @@ function createScene() {
       scene.background = colors[0];
       createBoxComp();
       break;
-    case 'black':
+    case 'random':
+    case 'center':
+    case 'mouse':
     default:
       createDefaultComp();
-      if (!options.snapOverlay && comp !== 'black') {
+      if (!options.snapOverlay && palette !== 'Black&White') {
         scene.background = colors[0];
       }
       createSnapOverlay();
@@ -158,7 +160,7 @@ function addLayer(numStrokes) {
 
 function createLayer(numStrokes) {
   const i = layers.length;
-  const zoom = comp === 'black' ? 10 : FXRand.exp(0.1, 10.0);
+  const zoom = FXRand.exp(0.1, 10.0);
   //const filter = zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
   const filter = THREE.LinearFilter;
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
@@ -174,7 +176,7 @@ function createLayer(numStrokes) {
     magFilter: filter,
     fragmentShader: colorFluidViewFrag,
   }));
-  if (comp === 'black') {
+  if (palette === 'Black&White') {
     layers[i].material.fragmentShader = blackFluidViewFrag;
     layers[i].material.needsUpdate = true;
   }
@@ -187,7 +189,12 @@ function createStrokes(layer, i) {
   const numStrokes = layer.options.numStrokes;
   for (let j=0; j<numStrokes; j++) {
     const stroke = createStroke(i, j);
-    layer.fluidPass.initStroke(j, stroke);
+    if (stroke.isMouse) {
+      layer.initMouseStroke(j, stroke);
+    }
+    else {
+      layer.fluidPass.initStroke(j, stroke);
+    }
   }
 }
 
@@ -198,12 +205,27 @@ function createStroke(i, j) {
     const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
     const pos = new THREE.Vector2(FXRand.num(), FXRand.num());
     const target = new THREE.Vector2(FXRand.num(), FXRand.num());
-    stroke = {
-      speed,
-      //isDown: FXRand.bool(),
-      pos,
-      target
-    };
+    switch (comp) {
+      case 'random':
+        stroke = {
+          speed,
+          isDown: FXRand.bool(),
+          pos,
+          target
+        };
+        break;
+      case 'center':
+        stroke = {
+          isDown: true,
+        };
+        break;
+      default:
+      case 'mouse':
+        stroke = {
+          isMouse: true,
+        }
+        break;
+    }
   }
   else {
     let sr = options.strokesRel;
@@ -222,7 +244,9 @@ function createStroke(i, j) {
         break;
     }
   }
-  debug.add(core.createCross(core.toScreen(stroke.pos)));
+  if (stroke.pos) {
+    debug.add(core.createCross(core.toScreen(stroke.pos)));
+  }
   return stroke;
 }
 
