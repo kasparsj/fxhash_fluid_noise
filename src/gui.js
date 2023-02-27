@@ -35,11 +35,11 @@ export const createGUI = (gui) => {
     if (options.hasOwnProperty('maxIterations')) {
         folder.add(options, 'maxIterations', 1, 20, 1);
     }
-    if (options.hasOwnProperty('behaviour')) {
-        folder.add(options, 'behaviour', ['regenerate', 'reset', 'addnew']);
+    if (options.hasOwnProperty('onClick')) {
+        folder.add(options, 'onClick', ['', 'regenerate', 'reset', 'addnew']);
     }
     if (options.hasOwnProperty('maxChanges')) {
-        folder.add(options, 'maxChanges', 3, 20, 1);
+        folder.add(options, 'maxChanges', 0, 20, 1);
     }
     if (options.hasOwnProperty('snapBlending')) {
         folder.add(options, 'snapBlending', 1, 5, 1).onChange(onChange);
@@ -58,7 +58,7 @@ export const createGUI = (gui) => {
     dev.createCheckBoxGui(palettes, 'Palettes');
 }
 
-export const createLayerGUI = (gui, i) => {
+export const createLayerGUI = (gui, i, randomize) => {
     const folder = gui.addFolder('Layer '+i);
     const updateLayer = () => {
         layers[i].mesh.visible = layerOptions[i].visible;
@@ -71,11 +71,18 @@ export const createLayerGUI = (gui, i) => {
             layers[i].reset();
         }
     }
+    const methods = {
+        randomize: function() {
+            randomize(layers[i], true);
+        }
+    };
     folder.add(layerOptions[i], 'visible', 0, 5, 1).listen().onChange(updateLayer);
     folder.add(layerOptions[i], 'blendModePass', 0, 5, 1).listen().onChange(updateLayer);
-    folder.add(layerOptions[i], 'blendModeView', 2, 5, 1).listen().onChange(updateLayer);
-    folder.add(layerOptions[i], 'dt', 0, 1, 0.01).listen().onChange(updateLayer);
+    folder.add(layerOptions[i], 'blendModeView', 0, 5, 1).listen().onChange(updateLayer);
+    folder.add(layerOptions[i], 'zoom', 0.1, 20, 0.1).listen().onChange(updateLayer);
+    folder.add(layerOptions[i], 'dt', 0.1, 0.3, 0.01).listen().onChange(updateLayer);
     folder.add(layerOptions[i], 'K', 0, 1, 0.01).listen().onChange(updateLayer);
     folder.add(layerOptions[i], 'nu', 0, 1, 0.01).listen().onChange(updateLayer);
     folder.add(layerOptions[i], 'kappa', 0, 1, 0.01).listen().onChange(updateLayer);
+    folder.add(methods, 'randomize');
 }

@@ -19,7 +19,7 @@ export const options = {
     maxSpeed: 0.01,
     // speedMult: 1,
     strokesRel: 'mirrorRand',
-    behaviour: 'regenerate',
+    onClick: '',
     snapOverlay: false,
     snapBlending: 3,
     snapOpacity: 3,

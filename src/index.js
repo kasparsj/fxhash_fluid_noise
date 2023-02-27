@@ -89,7 +89,9 @@ function createScene() {
         scene.background = colors[0];
       }
       createSnapOverlay();
-      scheduleChange();
+      if (options.maxChanges > 0) {
+        scheduleChange();
+      }
       break;
   }
   scene.add(debug);
@@ -116,7 +118,7 @@ function createDefaultComp() {
 function createBoxComp() {
   core.initControls(cam);
 
-  layerOptions.push(generateOptions(0));
+  layerOptions.push(initLayerOptions(0));
 
   const mat = mats.fluidViewUV({
     blending: layerOptions[0].blendModeView,
@@ -150,9 +152,9 @@ function createBoxComp() {
 
 function addLayer(numStrokes) {
   const i = layers.length;
-  layerOptions.push(generateOptions(i));
+  layerOptions.push(initLayerOptions(i));
   if (devMode) {
-    createLayerGUI(dev.gui, i);
+    createLayerGUI(dev.gui, i, changeLayerOptions);
   }
   const layer = createLayer(numStrokes);
   createStrokes(layer, i);
@@ -160,15 +162,14 @@ function addLayer(numStrokes) {
 
 function createLayer(numStrokes) {
   const i = layers.length;
-  const zoom = FXRand.exp(0.1, 10.0);
-  //const filter = zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
+  //const filter = layerOptions[i].zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
   const filter = THREE.LinearFilter;
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
-    zoom: zoom,
+    zoom: layerOptions[i].zoom,
     // zoom: 10,
     maxIterations: options.maxIterations,
-    transparent: comp !== 'box',
+    //transparent: comp !== 'box',
     opacity: options.opacity,
     generateMipmaps: false,
     type: THREE.HalfFloatType,
@@ -190,7 +191,7 @@ function createStrokes(layer, i) {
   for (let j=0; j<numStrokes; j++) {
     const stroke = createStroke(i, j);
     if (stroke.isMouse) {
-      layer.initMouseStroke(j, stroke);
+      layer.initMouseStroke(j, renderer.domElement);
     }
     else {
       layer.fluidPass.initStroke(j, stroke);
@@ -269,39 +270,42 @@ function setLayerColor(layer) {
   // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
 }
 
-function regenerateLayerOptions(layer, blendModes = false) {
+function changeLayerOptions(layer, doInit = false) {
   const i = layers.indexOf(layer);
-  if (blendModes) {
-    Object.assign(layerOptions[i], generateOptions(i));
+  if (doInit) {
+    Object.assign(layerOptions[i], initLayerOptions(i));
   }
   else {
-    Object.assign(layerOptions[i], generateFluidOptions(layerOptions[i], i));
+    Object.assign(layerOptions[i], fluidOptions(layerOptions[i], i));
   }
   layer.setOptions(layerOptions[i]);
 }
 
-function generateOptions(i) {
-  const blendModePass = FXRand.choice([0, 1, 2]);
+function initLayerOptions(i) {
+  //const blendModePass = FXRand.choice([0, 1, 2]);
+  const blendModePass = FXRand.choice([0, 1]);
   const blendModeView = FXRand.choice([2, 5]);
+  const zoom = FXRand.exp(0.1, 10.0);
   const opts = {
     visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
     blendModePass,
     blendModeView,
+    zoom,
   };
-  Object.assign(opts, generateFluidOptions(opts, i));
+  Object.assign(opts, fluidOptions(opts, i));
   return opts;
 }
 
-function generateFluidOptions(options, i) {
+function fluidOptions(options, i) {
   let opts;
-  do {
+  //do {
     opts = {
-      dt: FXRand.num(0.1, 1.0),
+      dt: FXRand.num(0.1, 0.3),
       K: FXRand.num(0.2, 0.7),
       nu: FXRand.num(0.4, 0.6),
       kappa: FXRand.num(0.1, 1.0),
     };
-  } while (!validateOptions(Object.assign({}, options, opts), i));
+  //} while (!validateOptions(Object.assign({}, options, opts), i));
   return opts;
 }
 
@@ -345,7 +349,7 @@ function changeCB() {
   console.log(vars.numChanges);
   takeSnapshot();
   layers.map((layer) => {
-    regenerateLayerOptions(layer);
+    changeLayerOptions(layer);
   });
   core.callbacks.length = 0;
   scheduleChange();
@@ -355,7 +359,7 @@ function restart() {
   core.togglePaused();
   initOptions();
   layers.map((layer) => {
-    regenerateLayerOptions(layer, true),
+    changeLayerOptions(layer, true),
     resetLayer(layer);
   });
   core.uFrame.value = 0;
@@ -384,13 +388,13 @@ function draw(event) {
 }
 
 function onClick(event) {
-  switch (options.behaviour) {
+  switch (options.onClick) {
     case 'addnew':
       addLayer(strokesPerLayer);
       break;
     case 'reset':
       layers.map((layer) => {
-        regenerateLayerOptions(layer, true);
+        changeLayerOptions(layer, true);
         resetLayer(layer);
       });
       core.uFrame.value = 0;
