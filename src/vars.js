@@ -20,6 +20,7 @@ const initVars = () => {
 
     // Feature generation
     features = {
+        composition: comp,
         palette: palette,
         layers: numLayers,
         color1: colors[0].getHexString(),

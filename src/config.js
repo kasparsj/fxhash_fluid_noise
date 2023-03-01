@@ -28,9 +28,11 @@ export const options = {
 };
 
 export const compositions = {
+    pnoise: true,
+    snoise: true,
     'random': false,
     center: false,
-    mouse: true,
+    mouse: false,
     box: false,
 };
 

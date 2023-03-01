@@ -17,6 +17,8 @@ import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
 import blackFluidViewFrag from "fxhash_lib/shaders/fluid/blackFluidView.frag";
 import colorFluidViewFrag from "fxhash_lib/shaders/fluid/colorFluidView.frag";
+import pnoiseFluidPassFrag from "fxhash_lib/shaders/fluid/pnoiseFluidPass.frag";
+import snoiseFluidPassFrag from "fxhash_lib/shaders/fluid/snoiseFluidPass.frag";
 
 let materialFBO;
 
@@ -164,23 +166,24 @@ function createLayer(numStrokes) {
   const i = layers.length;
   //const filter = layerOptions[i].zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
   const filter = THREE.LinearFilter;
+  let passShader;
+  if (comp === 'pnoise' || comp === 'snoise') {
+    passShader = mats.fluidPass({
+      fragmentShader: comp === 'pnoise' ? pnoiseFluidPassFrag : snoiseFluidPassFrag,
+    })
+  }
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
-    zoom: layerOptions[i].zoom,
-    // zoom: 10,
-    maxIterations: options.maxIterations,
-    //transparent: comp !== 'box',
-    opacity: options.opacity,
     generateMipmaps: false,
     type: THREE.HalfFloatType,
     minFilter: filter,
     magFilter: filter,
-    fragmentShader: colorFluidViewFrag,
+    passShader: passShader,
+    viewShader: mats.fluidView({
+      fragmentShader: palette === 'Black&White' ? blackFluidViewFrag : colorFluidViewFrag,
+    }),
   }));
-  if (palette === 'Black&White') {
-    layers[i].material.fragmentShader = blackFluidViewFrag;
-    layers[i].material.needsUpdate = true;
-  }
+  setFluidLayerOptions(i);
   setLayerColor(layers[i]);
   scene.add(layers[i].mesh);
   return layers[i];
@@ -278,7 +281,24 @@ function changeLayerOptions(layer, doInit = false) {
   else {
     Object.assign(layerOptions[i], fluidOptions(layerOptions[i], i));
   }
-  layer.setOptions(layerOptions[i]);
+  setFluidLayerOptions(i)
+}
+
+function setFluidLayerOptions(i) {
+  const options = layerOptions[i];
+  const layer = layers[i];
+
+  layer.setOptions(options);
+
+  layer.material.blending = options.blendModeView;
+  layer.material.transparent = options.transparent;
+  layer.material.opacity = options.opacity;
+
+  layer.fluidPass.material.blending = options.blendModePass;
+  layer.fluidPass.material.transparent = options.transparent;
+  layer.fluidPass.material.uniforms.uZoom.value = options.zoom;
+  layer.fluidPass.material.uniforms.uNoiseZoom = {value: FXRand.num(100, 2000)};
+  layer.fluidPass.material.defines.MAX_ITERATIONS = options.maxIterations + '.0';
 }
 
 function initLayerOptions(i) {
@@ -352,7 +372,9 @@ function changeCB() {
     changeLayerOptions(layer);
   });
   core.callbacks.length = 0;
-  scheduleChange();
+  if (options.maxChanges > 0) {
+    scheduleChange();
+  }
 }
 
 function restart() {

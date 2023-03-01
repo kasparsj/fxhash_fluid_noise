@@ -19,8 +19,8 @@ export const createGUI = (gui) => {
     }
 
     const folder = gui.addFolder('Options');
-    folder.add(options, 'minLayers', 1, 5, 1);
-    folder.add(options, 'maxLayers', 1, 5, 1);
+    folder.add(options, 'minLayers', 1, 10, 1);
+    folder.add(options, 'maxLayers', 1, 10, 1);
     if (options.hasOwnProperty('opacity')) {
         folder.add(options, 'opacity', 0, 1, 0.01);
     }
