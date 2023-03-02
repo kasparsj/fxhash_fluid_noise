@@ -50,12 +50,14 @@ function initLayerOptions(i) {
     //const blendModePass = FXRand.choice([0, 1, 2]);
     const blendModePass = FXRand.choice([0, 1]);
     const blendModeView = FXRand.choice([2, 5]);
-    const zoom = FXRand.exp(0.1, 10.0);
+    const fluidZoom = FXRand.exp(0.1, 10.0);
+    const noiseZoom = FXRand.num(100, 2000);
     const opts = {
         visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
         blendModePass,
         blendModeView,
-        zoom,
+        fluidZoom,
+        noiseZoom,
     };
     Object.assign(opts, fluidOptions(opts, i));
     return opts;
@@ -108,10 +110,10 @@ function setFluidLayerOptions(i) {
 
     layer.fluidPass.material.blending = options.blendModePass;
     layer.fluidPass.material.transparent = options.transparent;
-    layer.fluidPass.material.uniforms.uZoom.value = options.zoom;
-    layer.fluidPass.material.uniforms.uNoiseZoom = {value: FXRand.num(100, 2000)};
+    layer.fluidPass.material.uniforms.uZoom.value = options.fluidZoom;
+    layer.fluidPass.material.uniforms.uNoiseZoom = {value: options.noiseZoom};
     layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
-    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: new THREE.Vector2(0.001, 0)};
+    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: new THREE.Vector2(0.00001, 0)};
     layer.fluidPass.material.defines.MAX_ITERATIONS = options.maxIterations + '.0';
 }
 

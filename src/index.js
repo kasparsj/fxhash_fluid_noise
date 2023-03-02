@@ -153,7 +153,7 @@ function addLayer(numStrokes) {
 
 function createLayer(numStrokes) {
   const i = layers.length;
-  //const filter = layerOptions[i].zoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
+  //const filter = layerOptions[i].fluidZoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
   const filter = THREE.LinearFilter;
   let passShader;
   if (comp === 'pnoise' || comp === 'snoise') {

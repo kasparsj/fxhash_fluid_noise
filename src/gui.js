@@ -75,7 +75,12 @@ export const createLayerGUI = (gui, i) => {
     folder.add(layerOptions[i], 'visible', 0, 5, 1).listen().onChange(onChange);
     folder.add(layerOptions[i], 'blendModePass', 0, 5, 1).listen().onChange(onChange);
     folder.add(layerOptions[i], 'blendModeView', 0, 5, 1).listen().onChange(onChange);
-    folder.add(layerOptions[i], 'zoom', 0.1, 20, 0.1).listen().onChange(onChange);
+    if (layerOptions[i].hasOwnProperty('fluidZoom')) {
+        folder.add(layerOptions[i], 'fluidZoom', 0.1, 20, 0.1).listen().onChange(onChange);
+    }
+    if (layerOptions[i].hasOwnProperty('noiseZoom')) {
+        folder.add(layerOptions[i], 'noiseZoom', 1, 2000, 1).listen().onChange(onChange);
+    }
     folder.add(layerOptions[i], 'dt', options.minDt, options.maxDt, 0.01).listen().onChange(onChange);
     folder.add(layerOptions[i], 'K', 0, 1, 0.01).listen().onChange(onChange);
     folder.add(layerOptions[i], 'nu', 0, 1, 0.01).listen().onChange(onChange);
