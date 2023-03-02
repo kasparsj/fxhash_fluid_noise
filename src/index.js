@@ -4,11 +4,14 @@ import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 import * as css2D from "fxhash_lib/css2D";
-import {generateColor} from "fxhash_lib/color";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
-import {initVars, palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars} from "./vars";
+import {
+  initVars, initOptions, initLayerOptions, setFluidLayerOptions, setLayerColor,
+  changeCB, fullResetLayer, scheduleChange,
+  palette, colors, comp, layers, strokesPerLayer, debug, features, vars,
+} from "./common";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import * as mats from "fxhash_lib/materials";
@@ -60,20 +63,6 @@ function setup() {
   addEventListeners();
 
   fxpreview();
-}
-
-function initOptions() {
-  if (!options.hasOwnProperty('speedMult')) {
-    options.speedMult = FXRand.num(0.1, 10);
-  }
-  if (!options.hasOwnProperty('snapBlending')) {
-    //options.snapBlending = FXRand.choice([3, 5]);
-    options.snapBlending = THREE.SubtractiveBlending;
-    // options.snapBlending = THREE.CustomBlending;
-  }
-  if (!options.hasOwnProperty('maxChanges')) {
-    options.maxChanges = FXRand.int(5, 9);
-  }
 }
 
 function createScene() {
@@ -156,7 +145,7 @@ function addLayer(numStrokes) {
   const i = layers.length;
   layerOptions.push(initLayerOptions(i));
   if (devMode) {
-    createLayerGUI(dev.gui, i, changeLayerOptions);
+    createLayerGUI(dev.gui, i);
   }
   const layer = createLayer(numStrokes);
   createStrokes(layer, i);
@@ -254,81 +243,6 @@ function createStroke(i, j) {
   return stroke;
 }
 
-function resetLayer(layer) {
-  layer.reset();
-  for (let j=0; j<layer.options.numStrokes; j++) {
-    const speed = FXRand.num(options.minSpeed, options.maxSpeed) * options.speedMult;
-    layer.fluidPass.uniforms.uSpeed.value[j] = speed;
-  }
-  const i = layers.indexOf(layer);
-  colors[i] = generateColor(palette, hslPalette[0]);
-  setLayerColor(layer);
-}
-
-function setLayerColor(layer) {
-  const i = layers.indexOf(layer);
-  const color = i < colors.length ? colors[i] : colors[1];
-  layer.color = new THREE.Vector4(color.r, color.g, color.b, features.colorW);
-  // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
-  // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
-}
-
-function changeLayerOptions(layer, doInit = false) {
-  const i = layers.indexOf(layer);
-  if (doInit) {
-    Object.assign(layerOptions[i], initLayerOptions(i));
-  }
-  else {
-    Object.assign(layerOptions[i], fluidOptions(layerOptions[i], i));
-  }
-  setFluidLayerOptions(i)
-}
-
-function setFluidLayerOptions(i) {
-  const options = layerOptions[i];
-  const layer = layers[i];
-
-  layer.setOptions(options);
-
-  layer.material.blending = options.blendModeView;
-  layer.material.transparent = options.transparent;
-  layer.material.opacity = options.opacity;
-
-  layer.fluidPass.material.blending = options.blendModePass;
-  layer.fluidPass.material.transparent = options.transparent;
-  layer.fluidPass.material.uniforms.uZoom.value = options.zoom;
-  layer.fluidPass.material.uniforms.uNoiseZoom = {value: FXRand.num(100, 2000)};
-  layer.fluidPass.material.defines.MAX_ITERATIONS = options.maxIterations + '.0';
-}
-
-function initLayerOptions(i) {
-  //const blendModePass = FXRand.choice([0, 1, 2]);
-  const blendModePass = FXRand.choice([0, 1]);
-  const blendModeView = FXRand.choice([2, 5]);
-  const zoom = FXRand.exp(0.1, 10.0);
-  const opts = {
-    visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
-    blendModePass,
-    blendModeView,
-    zoom,
-  };
-  Object.assign(opts, fluidOptions(opts, i));
-  return opts;
-}
-
-function fluidOptions(options, i) {
-  let opts;
-  //do {
-    opts = {
-      dt: FXRand.num(0.1, 0.3),
-      K: FXRand.num(0.2, 0.7),
-      nu: FXRand.num(0.4, 0.6),
-      kappa: FXRand.num(0.1, 1.0),
-    };
-  //} while (!validateOptions(Object.assign({}, options, opts), i));
-  return opts;
-}
-
 function validateOptions(options, i) {
   const blendModeString = options.blendModePass+'-'+options.blendModeView;
   if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
@@ -343,54 +257,6 @@ function validateOptions(options, i) {
     }
   }
   return true;
-}
-
-const takeSnapshot = () => {
-  if (options.snapOverlay) {
-    vars.snapOverlay.render();
-    vars.snapOverlay.composer.swapBuffers();
-  }
-}
-
-function scheduleChange() {
-  if (vars.numChanges < options.maxChanges) {
-    core.schedule(changeCB, 7000);
-  }
-  else {
-    core.schedule(() => {
-      core.togglePaused();
-      setTimeout(restart, 10000);
-    }, 7000);
-  }
-}
-
-function changeCB() {
-  vars.numChanges++;
-  console.log(vars.numChanges);
-  takeSnapshot();
-  layers.map((layer) => {
-    changeLayerOptions(layer);
-  });
-  core.callbacks.length = 0;
-  if (options.maxChanges > 0) {
-    scheduleChange();
-  }
-}
-
-function restart() {
-  core.togglePaused();
-  initOptions();
-  layers.map((layer) => {
-    changeLayerOptions(layer, true),
-    resetLayer(layer);
-  });
-  core.uFrame.value = 0;
-  if (options.snapOverlay) {
-    vars.snapOverlay.material.blending = options.snapBlending;
-    vars.snapOverlay.clear();
-  }
-  vars.numChanges = 0;
-  scheduleChange();
 }
 
 function draw(event) {
@@ -415,13 +281,10 @@ function onClick(event) {
       addLayer(strokesPerLayer);
       break;
     case 'reset':
-      layers.map((layer) => {
-        changeLayerOptions(layer, true);
-        resetLayer(layer);
-      });
+      layers.map(fullResetLayer);
       core.uFrame.value = 0;
       break
-    case 'regenerate':
+    case 'change':
       changeCB();
       break;
   }
