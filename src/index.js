@@ -18,8 +18,10 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
-import blackFluidViewFrag from "fxhash_lib/shaders/fluid/blackFluidView.frag";
-import colorFluidViewFrag from "fxhash_lib/shaders/fluid/colorFluidView.frag";
+import multFluidViewFrag from "fxhash_lib/shaders/fluid/multFluidView.frag";
+import invMultFluidViewFrag from "fxhash_lib/shaders/fluid/invMultFluidView.frag"
+import RGBFluidViewFrag from "fxhash_lib/shaders/fluid/RGBFluidView.frag";
+import invRGBFluidViewFrag from "fxhash_lib/shaders/fluid/invRGBFluidView.frag";
 import pnoiseFluidPassFrag from "fxhash_lib/shaders/fluid/pnoiseFluidPass.frag";
 import snoiseFluidPassFrag from "fxhash_lib/shaders/fluid/snoiseFluidPass.frag";
 
@@ -160,6 +162,9 @@ function createLayer(numStrokes) {
       fragmentShader: comp === 'pnoise' ? pnoiseFluidPassFrag : snoiseFluidPassFrag,
     })
   }
+  const fragmentShader = palette === 'Black&White'
+      ? FXRand.choice([invMultFluidViewFrag, invRGBFluidViewFrag])
+      : FXRand.choice([multFluidViewFrag, RGBFluidViewFrag]);
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
     generateMipmaps: false,
@@ -168,7 +173,7 @@ function createLayer(numStrokes) {
     magFilter: filter,
     passShader: passShader,
     viewShader: mats.fluidView({
-      fragmentShader: palette === 'Black&White' ? blackFluidViewFrag : colorFluidViewFrag,
+      fragmentShader: fragmentShader,
     }),
   }));
   setFluidLayerOptions(i);

@@ -75,7 +75,7 @@ function initLayerOptions(i) {
     }
     const prevLayerOptions = i > 0 ? layerOptions[i-1] : null
     const blendModePass = FXRand.choice([0, 1]);
-    const blendModeView = FXRand.choice(removeFromArray([2, 3, 5], prevLayerOptions ? prevLayerOptions.blendModeView : 0));
+    const blendModeView = FXRand.choice(prevLayerOptions ? removeFromArray([2, 3, 5], prevLayerOptions.blendModeView) : [2, 5]);
     const fluidZoom = FXRand.exp(0.1, 10.0);
     const noiseZoom = FXRand.num(500, 2000);
     const opts = {
@@ -107,7 +107,7 @@ function fluidOptions(layerOpts, i) {
         dt: FXRand.num(options.minDt, options.maxDt),
         K: FXRand.num(0.2, 0.7),
         nu: FXRand.num(0.4, 0.6),
-        kappa: FXRand.num(0.1, 1.0),
+        kappa: FXRand.num(0.1, 0.75),
     };
     //} while (!validateOptions(Object.assign({}, options, opts), i));
     return opts;
