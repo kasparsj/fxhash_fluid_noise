@@ -18,7 +18,7 @@ export const options = {
     minSpeed: 0.001,
     maxSpeed: 0.01,
     minDt: 0.1,
-    maxDt: 0.3,
+    maxDt: 0.25,
     // speedMult: 1,
     strokesRel: 'mirrorRand',
     onClick: 'change',
@@ -44,6 +44,7 @@ export const palettes = {
     'Mono': true,
     'Analogous': true,
     'Complementary': true,
+    'randomColor': true,
 };
 
 export const layerOptions = [];

@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "fxhash_lib": "file:../fxhash_lib",
-    "three": "^0.149.0",
     "glslify-loader": "^2.0.0",
-    "raw-loader": "^4.0.2"
+    "raw-loader": "^4.0.2",
+    "three": "^0.149.0"
   },
   "devDependencies": {
     "adm-zip": "^0.5.9",

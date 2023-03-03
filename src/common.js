@@ -1,16 +1,20 @@
 import * as THREE from "three";
 import {chooseComposition, choosePalette, layerOptions, options} from "./config";
 import * as FXRand from "fxhash_lib/random";
-import {generateColor, generateHSLPalette, hsl2Color} from "fxhash_lib/color";
+import {generateColor, generateHSLPalette, generateRandomPalette, hex2Color, hsl2Color} from "fxhash_lib/color";
 import * as core from "../../fxhash_lib/core";
 
 let palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars;
 
-const initVars = () => {
+function initCommon() {
+    initOptions();
+    initVars();
+}
+
+function initVars() {
     const numLayers = FXRand.int(options.minLayers, options.maxLayers);
     palette = choosePalette();
-    hslPalette = generateHSLPalette(palette, ['Complementary', 'Black&White'] ? 2 : numLayers + 1);
-    colors = hslPalette.map(hsl2Color);
+    colors = generateColors(palette, ['Complementary', 'Black&White'] ? 2 : numLayers + 1);
     comp = chooseComposition();
     layers = [];
     strokesPerLayer = FXRand.int(options.minStrokes, options.maxStrokes);
@@ -46,12 +50,34 @@ function initOptions() {
     }
 }
 
+function generateColors(palette, numColors) {
+    switch (palette) {
+        case 'randomColor':
+            return generateRandomPalette({
+                count: numColors,
+                luminosity: FXRand.choice(['bright']),
+            }).map(hex2Color);
+        case 'Analogous':
+        case 'Black&White':
+        default:
+            hslPalette = generateHSLPalette(palette, numColors);
+            return hslPalette.map(hsl2Color);
+    }
+}
+
 function initLayerOptions(i) {
-    //const blendModePass = FXRand.choice([0, 1, 2]);
+    const removeFromArray = (arr, val) => {
+        const index = arr.indexOf(val);
+        if (index > -1) { // only splice array when item is found
+            arr.splice(index, 1); // 2nd parameter means remove one item only
+        }
+        return arr;
+    }
+    const prevLayerOptions = i > 0 ? layerOptions[i-1] : null
     const blendModePass = FXRand.choice([0, 1]);
-    const blendModeView = FXRand.choice([2, 5]);
+    const blendModeView = FXRand.choice(removeFromArray([2, 3, 5], prevLayerOptions ? prevLayerOptions.blendModeView : 0));
     const fluidZoom = FXRand.exp(0.1, 10.0);
-    const noiseZoom = FXRand.num(100, 2000);
+    const noiseZoom = FXRand.num(500, 2000);
     const opts = {
         visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
         blendModePass,
@@ -85,6 +111,22 @@ function fluidOptions(layerOpts, i) {
     };
     //} while (!validateOptions(Object.assign({}, options, opts), i));
     return opts;
+}
+
+function validateOptions(options, i) {
+    const blendModeString = options.blendModePass+'-'+options.blendModeView;
+    if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
+        return false;
+    }
+    if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
+        return false;
+    }
+    if (palette === 'Analogous') {
+        if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const updateLayer = (i) => {
@@ -197,9 +239,9 @@ function setLayerColor(layer) {
 }
 
 export {
-    initVars, initOptions, initLayerOptions,
+    initCommon, initLayerOptions,
     changeLayerOptions, fluidOptions, updateLayer, setFluidLayerOptions, setLayerColor,
     resetLayers, fullResetLayer,
     scheduleChange, changeCB,
-    palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars,
+    palette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars,
 };

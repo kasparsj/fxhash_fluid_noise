@@ -8,7 +8,7 @@ import {devMode, settings, options, layerOptions, lightOptions, effectOptions} f
 import {createGUI, createLayerGUI} from "./gui";
 import {renderer, scene, cam} from "fxhash_lib/core";
 import {
-  initVars, initOptions, initLayerOptions, setFluidLayerOptions, setLayerColor,
+  initCommon, initLayerOptions, setFluidLayerOptions, setLayerColor,
   changeCB, fullResetLayer, scheduleChange,
   palette, colors, comp, layers, strokesPerLayer, debug, features, vars,
 } from "./common";
@@ -33,8 +33,7 @@ function setup() {
     createGUI(dev.gui);
   }
 
-  initOptions();
-  initVars();
+  initCommon();
 
   const initSettings = Object.assign({}, settings, {
     alpha: true,
@@ -241,22 +240,6 @@ function createStroke(i, j) {
     debug.add(core.createCross(core.toScreen(stroke.pos)));
   }
   return stroke;
-}
-
-function validateOptions(options, i) {
-  const blendModeString = options.blendModePass+'-'+options.blendModeView;
-  if ((options.dt + options.kappa/1.5) < Math.min(1.0, 0.5 * Math.max(features.colorW, 1.0))) {
-    return false;
-  }
-  if (['2-2', '2-5'].indexOf(blendModeString) > -1 && (options.dt < 0.9 || options.kappa < 0.8)) {
-    return false;
-  }
-  if (palette === 'Analogous') {
-    if (['1-5'].indexOf(blendModeString) > -1 && (options.dt + options.kappa) < 1.0) {
-      return false;
-    }
-  }
-  return true;
 }
 
 function draw(event) {
