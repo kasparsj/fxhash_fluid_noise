@@ -11,7 +11,7 @@ import * as fluidView from "fxhash_lib/shaders/fluid/view";
 
 let palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars;
 
-const viewFragmentShaders = utils.removeFromArray(Object.keys(fluidView), ['FluidViewFrag', 'FluidViewUVFrag']);
+const viewFragmentShaders = utils.removeFromArray(Object.keys(fluidView), ['FluidViewFrag', 'FluidViewUVFrag', 'monoFluidViewFrag', 'yellowRGBFluidViewFrag']);
 
 function initCommon() {
     initOptions();
@@ -187,7 +187,8 @@ function setFluidLayerOptions(i) {
     layer.fluidPass.material.uniforms.uZoom.value = options.fluidZoom;
     layer.fluidPass.material.uniforms.uNoiseZoom = {value: options.noiseZoom};
     layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
-    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: new THREE.Vector2(0.00001, 0)};
+    layer.fluidPass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
+    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
     layer.fluidPass.material.defines.MAX_ITERATIONS = options.maxIterations + '.0';
 }
 

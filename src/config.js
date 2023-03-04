@@ -6,11 +6,12 @@ export const devMode = true;
 
 export const settings = {
     name,
+    cam: 'orthographic',
 };
 
 export const options = {
-    minLayers: 5,
-    maxLayers: 5,
+    minLayers: 2,
+    maxLayers: 2,
     opacity: 1.0,
     minStrokes: 1,
     maxStrokes: 2, // iOS can do max 22

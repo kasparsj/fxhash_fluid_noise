@@ -3,6 +3,7 @@ import * as FXRand from 'fxhash_lib/random.js'
 import * as core from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
+//import * as lights from "fxhash_lib/lights";
 import * as css2D from "fxhash_lib/css2D";
 import {devMode, settings, options, layerOptions, lightOptions, effectOptions} from "./config"
 import {createGUI, createLayerGUI} from "./gui";
@@ -27,6 +28,7 @@ setup();
 function setup() {
   if (devMode) {
     dev.initGui(settings.name);
+    //dev.initSettings(settings);
     createGUI(dev.gui);
   }
 
@@ -36,7 +38,7 @@ function setup() {
     alpha: true,
   });
   core.init(initSettings);
-  //lights.init(lightOptions);
+  // lights.init(lightOptions);
   css2D.init();
 
   if (devMode) {
@@ -97,6 +99,12 @@ function createSnapOverlay() {
 }
 
 function createDefaultComp() {
+  // const mat = new THREE.MeshLambertMaterial({color: colors[0], blending: THREE.CustomBlending});
+  // // const mat = new THREE.MeshBasicMaterial({color: colors[0], blending: THREE.CustomBlending});
+  // const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
+  // box.rotation.set(90, 0, 180);
+  // scene.add(box);
+
   for (let i=0; i<features.layers; i++) {
     addLayer(strokesPerLayer);
   }
