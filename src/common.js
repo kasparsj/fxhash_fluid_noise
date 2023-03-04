@@ -2,9 +2,16 @@ import * as THREE from "three";
 import {chooseComposition, choosePalette, layerOptions, options} from "./config";
 import * as FXRand from "fxhash_lib/random";
 import {generateColor, generateHSLPalette, generateRandomPalette, hex2Color, hsl2Color} from "fxhash_lib/color";
-import * as core from "../../fxhash_lib/core";
+import * as core from "fxhash_lib/core";
+import * as mats from "fxhash_lib/materials";
+import * as utils from "fxhash_lib/utils";
+import pnoiseFluidPassFrag from "fxhash_lib/shaders/fluid/pnoiseFluidPass.frag";
+import snoiseFluidPassFrag from "fxhash_lib/shaders/fluid/snoiseFluidPass.frag";
+import * as fluidView from "fxhash_lib/shaders/fluid/view";
 
 let palette, hslPalette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars;
+
+const viewFragmentShaders = utils.removeFromArray(Object.keys(fluidView), ['FluidViewFrag', 'FluidViewUVFrag']);
 
 function initCommon() {
     initOptions();
@@ -53,39 +60,60 @@ function initOptions() {
 function generateColors(palette, numColors) {
     switch (palette) {
         case 'randomColor':
+            const luminosity = FXRand.bool() ? 'dark' : 'bright';
+            const hue = luminosity === 'dark' ? FXRand.choice(['red', 'orange']) : FXRand.choice(['monochrome', 'blue']);
             return generateRandomPalette({
                 count: numColors,
-                luminosity: FXRand.choice(['bright']),
+                luminosity: luminosity,
+                hue: hue,
             }).map(hex2Color);
         case 'Analogous':
-        case 'Black&White':
         default:
             hslPalette = generateHSLPalette(palette, numColors);
             return hslPalette.map(hsl2Color);
     }
 }
 
-function initLayerOptions(i) {
-    const removeFromArray = (arr, val) => {
-        const index = arr.indexOf(val);
-        if (index > -1) { // only splice array when item is found
-            arr.splice(index, 1); // 2nd parameter means remove one item only
-        }
-        return arr;
-    }
-    const prevLayerOptions = i > 0 ? layerOptions[i-1] : null
+function initLayerOptions(i, initShaders = false) {
     const blendModePass = FXRand.choice([0, 1]);
-    const blendModeView = FXRand.choice(prevLayerOptions ? removeFromArray([2, 3, 5], prevLayerOptions.blendModeView) : [2, 5]);
+    const blendModeView = FXRand.choice([2, 5]);
     const fluidZoom = FXRand.exp(0.1, 10.0);
-    const noiseZoom = FXRand.num(500, 2000);
+    const noiseZoom = FXRand.num(400, 2000);
+    const color = (i < colors.length ? colors[i] : colors[1]).getHex();
+    const saturation = FXRand.num(0.5, 1.0); //features.colorW / 5.0;
     const opts = {
         visible: !layers[i] || !layers[i].mesh || layers[i].mesh.visible,
         blendModePass,
         blendModeView,
         fluidZoom,
         noiseZoom,
+        color,
+        saturation,
     };
     Object.assign(opts, fluidOptions(opts, i));
+    if (initShaders) {
+        let passShader;
+        if (comp === 'pnoise' || comp === 'snoise') {
+            passShader = mats.fluidPass({
+                fragmentShader: comp === 'pnoise' ? pnoiseFluidPassFrag : snoiseFluidPassFrag,
+            })
+        }
+        let viewShader;
+        const fragmentShaderChoices = palette === 'randomColor'
+            ? viewFragmentShaders
+            : ['multFluidViewFrag', 'RGBFluidViewFrag', 'blueRGBFluidViewFrag'];
+        if (i > 0) {
+            const prevLayerOptions = layerOptions[i-1];
+            viewShader = FXRand.choice(utils.removeFromArray(fragmentShaderChoices, prevLayerOptions.viewShader));
+        }
+        else {
+            viewShader = FXRand.choice(fragmentShaderChoices);
+        }
+        Object.assign(opts, {
+            passShader: passShader,
+            viewShader: viewShader,
+        });
+    }
     return opts;
 }
 
@@ -133,6 +161,7 @@ const updateLayer = (i) => {
     if (options.onChange) {
         layers[i].mesh.visible = layerOptions[i].visible;
         setFluidLayerOptions(i);
+        setLayerColor(layers[i]);
         if (options.onChange === 'reset') {
             resetLayers();
             core.uFrame.value = 0;
@@ -149,6 +178,8 @@ function setFluidLayerOptions(i) {
     layer.material.blending = options.blendModeView;
     layer.material.transparent = options.transparent;
     layer.material.opacity = options.opacity;
+    layer.material.fragmentShader = fluidView[options.viewShader];
+    layer.material.uniforms.uInk.value = options.saturation;
 
     layer.fluidPass.material.blending = options.blendModePass;
     layer.fluidPass.material.transparent = options.transparent;
@@ -232,7 +263,7 @@ function changeLayerColor(layer) {
 
 function setLayerColor(layer) {
     const i = layers.indexOf(layer);
-    const color = i < colors.length ? colors[i] : colors[1];
+    const color = new THREE.Color(layerOptions[i].color);
     layer.color = new THREE.Vector4(color.r, color.g, color.b, features.colorW);
     // layer.color = new THREE.Vector4(10, 10, 10, 0.1);
     // layer.color = FXRand.choice([new THREE.Vector4(10, 10, 10, 0.1), new THREE.Vector4(0, 0, 10, 0.1)]);
@@ -243,5 +274,5 @@ export {
     changeLayerOptions, fluidOptions, updateLayer, setFluidLayerOptions, setLayerColor,
     resetLayers, fullResetLayer,
     scheduleChange, changeCB,
-    palette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars,
+    palette, colors, comp, layers, strokesPerLayer, debug, labels, features, vars, viewFragmentShaders,
 };

@@ -68,7 +68,7 @@ export const lightOptions = {
 };
 
 export const effectOptions = {
-    enabled: true,
+    enabled: false,
     gammaCorrection: false,
     bloom: 0,
     //hBlur: 1 / window.innerWidth / 2,
@@ -83,7 +83,7 @@ export const effectOptions = {
     dotScale: 0,
     //rgbShift: 0,
     sepia: 0,
-    fxaa: true,
+    fxaa: false,
     //bleach: 0,
     //colorify: false,
     //pixelate: false,

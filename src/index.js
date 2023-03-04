@@ -10,7 +10,7 @@ import {renderer, scene, cam} from "fxhash_lib/core";
 import {
   initCommon, initLayerOptions, setFluidLayerOptions, setLayerColor,
   changeCB, fullResetLayer, scheduleChange,
-  palette, colors, comp, layers, strokesPerLayer, debug, features, vars,
+  colors, comp, layers, strokesPerLayer, debug, features, vars,
 } from "./common";
 import {FullScreenLayer} from "fxhash_lib/postprocessing/FullScreenLayer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
@@ -18,12 +18,7 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import {FluidLayer} from "fxhash_lib/postprocessing/FluidLayer";
-import multFluidViewFrag from "fxhash_lib/shaders/fluid/multFluidView.frag";
-import invMultFluidViewFrag from "fxhash_lib/shaders/fluid/invMultFluidView.frag"
-import RGBFluidViewFrag from "fxhash_lib/shaders/fluid/RGBFluidView.frag";
-import invRGBFluidViewFrag from "fxhash_lib/shaders/fluid/invRGBFluidView.frag";
-import pnoiseFluidPassFrag from "fxhash_lib/shaders/fluid/pnoiseFluidPass.frag";
-import snoiseFluidPassFrag from "fxhash_lib/shaders/fluid/snoiseFluidPass.frag";
+import * as fluidView from "fxhash_lib/shaders/fluid/view";
 
 let materialFBO;
 
@@ -77,9 +72,9 @@ function createScene() {
     case 'mouse':
     default:
       createDefaultComp();
-      if (!options.snapOverlay && palette !== 'Black&White') {
-        scene.background = colors[0];
-      }
+      // if (!options.snapOverlay && palette !== 'Black&White') {
+      //   scene.background = colors[0];
+      // }
       createSnapOverlay();
       if (options.maxChanges > 0) {
         scheduleChange();
@@ -110,7 +105,7 @@ function createDefaultComp() {
 function createBoxComp() {
   core.initControls(cam);
 
-  layerOptions.push(initLayerOptions(0));
+  layerOptions.push(initLayerOptions(0, true));
 
   const mat = mats.fluidViewUV({
     blending: layerOptions[0].blendModeView,
@@ -144,7 +139,7 @@ function createBoxComp() {
 
 function addLayer(numStrokes) {
   const i = layers.length;
-  layerOptions.push(initLayerOptions(i));
+  layerOptions.push(initLayerOptions(i, true));
   if (devMode) {
     createLayerGUI(dev.gui, i);
   }
@@ -156,24 +151,14 @@ function createLayer(numStrokes) {
   const i = layers.length;
   //const filter = layerOptions[i].fluidZoom > 1 ? FXRand.choice([THREE.NearestFilter, THREE.LinearFilter]) : THREE.LinearFilter;
   const filter = THREE.LinearFilter;
-  let passShader;
-  if (comp === 'pnoise' || comp === 'snoise') {
-    passShader = mats.fluidPass({
-      fragmentShader: comp === 'pnoise' ? pnoiseFluidPassFrag : snoiseFluidPassFrag,
-    })
-  }
-  const fragmentShader = palette === 'Black&White'
-      ? FXRand.choice([invMultFluidViewFrag, invRGBFluidViewFrag])
-      : FXRand.choice([multFluidViewFrag, RGBFluidViewFrag]);
   layers[i] = new FluidLayer(renderer, scene, cam, Object.assign({}, layerOptions[i], {
     numStrokes,
     generateMipmaps: false,
     type: THREE.HalfFloatType,
     minFilter: filter,
     magFilter: filter,
-    passShader: passShader,
     viewShader: mats.fluidView({
-      fragmentShader: fragmentShader,
+      fragmentShader: fluidView[layerOptions[i].viewShader],
     }),
   }));
   setFluidLayerOptions(i);

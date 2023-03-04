@@ -1,6 +1,7 @@
 import {compositions, layerOptions, options, palettes} from "./config";
 import * as dev from "fxhash_lib/dev";
-import {layers, debug, vars, changeLayerOptions, updateLayer} from "./common";
+import {layers, debug, vars, changeLayerOptions, updateLayer, viewFragmentShaders} from "./common";
+import * as fluidView from "fxhash_lib/shaders/fluid/view";
 
 export const createGUI = (gui) => {
     gui.remember(options);
@@ -85,5 +86,8 @@ export const createLayerGUI = (gui, i) => {
     folder.add(layerOptions[i], 'K', 0, 1, 0.01).listen().onChange(onChange);
     folder.add(layerOptions[i], 'nu', 0, 1, 0.01).listen().onChange(onChange);
     folder.add(layerOptions[i], 'kappa', 0, 1, 0.01).listen().onChange(onChange);
+    folder.add(layerOptions[i], 'viewShader', viewFragmentShaders).listen().onChange(onChange);
+    folder.addColor(layerOptions[i], 'color').listen().onChange(onChange);
+    folder.add(layerOptions[i], 'saturation', 0.01, 1, 0.01).listen().onChange(onChange);
     folder.add(methods, 'randomize');
 }
