@@ -31,7 +31,7 @@ export const options = {
 };
 
 export const compositions = {
-    pnoise: true,
+    pnoise: false,
     snoise: true,
     'random': false,
     center: false,
@@ -40,10 +40,10 @@ export const compositions = {
 };
 
 export const palettes = {
-    'Black&White': true,
-    'Mono': true,
-    'Analogous': true,
-    'Complementary': true,
+    'Black&White': false,
+    'Mono': false,
+    'Analogous': false,
+    'Complementary': false,
     'randomColor': true,
 };
 

@@ -89,6 +89,7 @@ function initLayerOptions(i, initShaders = false) {
         noiseZoom,
         color,
         saturation,
+        maxIterations: options.maxIterations,
     };
     Object.assign(opts, fluidOptions(opts, i));
     if (initShaders) {
