@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as core from "fxhash_lib/core";
-import {cam, options, renderer, scene, settings} from "fxhash_lib/core";
+import {cam, renderer, scene, settings, options, features} from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 //import * as lights from "fxhash_lib/lights";
@@ -88,7 +88,7 @@ function createDefaultComp() {
   // box.rotation.set(90, 0, 180);
   // scene.add(box);
 
-  for (let i=0; i<fluid.features.layers; i++) {
+  for (let i=0; i<features.layers; i++) {
     fluid.createLayer();
   }
 }
@@ -132,7 +132,7 @@ function onCreateLayer(event) {
 function onInitLayerOptions(event) {
   const {options} = event.detail;
   options.noiseZoom = FXRand.num(400, 2000);
-  options.colorW = fluid.features.colorW;  //features.colorW / 5.0;
+  options.colorW = features.colorW;  //features.colorW / 5.0;
 }
 
 function onApplyLayerOptions(event) {

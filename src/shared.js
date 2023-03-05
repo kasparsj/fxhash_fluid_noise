@@ -1,6 +1,5 @@
-import {chooseComposition, options} from "fxhash_lib/core";
-import * as FXRand from "fxhash_lib/random";
-import {features} from "fxhash_lib/fluid";
+import {chooseComposition} from "fxhash_lib/core";
+import {features} from "fxhash_lib/core";
 
 let comp;
 

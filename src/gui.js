@@ -6,13 +6,13 @@ export const createGUI = (gui) => {
     gui.remember(options);
     const onChange = () => {
         if (options.hasOwnProperty('snapOverlay')) {
-            fluid.vars.snapOverlay.mesh.visible = options.snapOverlay;
+            fluid.snapOverlay.mesh.visible = options.snapOverlay;
         }
         if (options.hasOwnProperty('snapBlending')) {
-            fluid.vars.snapOverlay.mesh.material.blending = options.snapBlending;
+            fluid.snapOverlay.mesh.material.blending = options.snapBlending;
         }
         if (options.hasOwnProperty('snapOpacity')) {
-            fluid.vars.snapOverlay.mesh.material.opacity = options.snapOpacity;
+            fluid.snapOverlay.mesh.material.opacity = options.snapOpacity;
         }
     }
 
