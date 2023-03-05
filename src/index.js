@@ -132,7 +132,7 @@ function onCreateLayer(event) {
 }
 
 function onInitLayerOptions(event) {
-  const {layerOpts} = event.detail;
+  const {i, layerOpts} = event.detail;
   layerOpts.noiseZoom = FXRand.num(400, 1700);
   layerOpts.noiseMin = options.noiseMin;
   layerOpts.noiseMax = options.noiseMax;
@@ -140,18 +140,22 @@ function onInitLayerOptions(event) {
   switch (comp) {
     case 'sea':
       layerOpts.blendModePass = 0;
+      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = FXRand.exp(0.9, 1.4);
       break;
     case 'desert':
-      layerOpts.blendModePass = FXRand.choice([0, 1]);
-      layerOpts.fluidZoom = FXRand.exp(0.1, 0.8);
+      layerOpts.blendModePass = 0;
+      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
+      layerOpts.fluidZoom = FXRand.exp(0.1, 0.3);
       break;
     case 'glitch':
       layerOpts.blendModePass = 1;
+      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = FXRand.exp(1.5, 5.0);
       break;
     default:
       layerOpts.blendModePass = FXRand.choice([0, 1]);
+      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       break;
   }
 }

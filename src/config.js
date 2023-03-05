@@ -13,7 +13,7 @@ Object.assign(options, {
     minLayers: 2,
     maxLayers: 2,
     opacity: 1.0,
-    minDt: 0.10,
+    minDt: 0.15,
     maxDt: 0.25,
     onClick: 'change',
     onChange: 'update',
