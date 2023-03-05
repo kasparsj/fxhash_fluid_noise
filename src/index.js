@@ -66,18 +66,10 @@ function setup() {
 function createScene() {
   switch (comp) {
     case 'box':
-      scene.background = fluid.colors[0];
       createBoxComp();
       break;
     default:
       createDefaultComp();
-      // if (!options.snapOverlay && palette !== 'Black&White') {
-      //   scene.background = fluid.colors[0];
-      // }
-      fluid.createSnapOverlay();
-      if (options.maxChanges > 0) {
-        fluid.scheduleChange();
-      }
       break;
   }
 }
@@ -89,12 +81,18 @@ function createDefaultComp() {
   // box.rotation.set(90, 0, 180);
   // scene.add(box);
 
-  for (let i=0; i<features.layers; i++) {
-    fluid.createLayer();
+  fluid.createLayers();
+  // if (!options.snapOverlay && palette !== 'Black&White') {
+  //   scene.background = fluid.colors[0];
+  // }
+  fluid.createSnapOverlay();
+  if (options.maxChanges > 0) {
+    fluid.scheduleChange();
   }
 }
 
 function createBoxComp() {
+  scene.background = fluid.colors[0];
   core.initControls(cam);
 
   fluid.createLayer();
