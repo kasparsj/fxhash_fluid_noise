@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as core from "fxhash_lib/core";
-import {cam, renderer, scene, settings, options, compositions, palettes, features} from "fxhash_lib/core";
+import {cam, renderer, scene, settings, options, compositions, palettes, features, comp, palette} from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 //import * as lights from "fxhash_lib/lights";
@@ -12,7 +12,6 @@ import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import * as FXRand from "fxhash_lib/random";
 import {pnoiseFluidPassFrag, snoiseFluidPassFrag} from "fxhash_lib/shaders/fluid/pass";
-import {initShared, comp} from "./shared";
 
 let materialFBO;
 
@@ -20,14 +19,10 @@ setup();
 
 function setup() {
   if (devMode) {
-    dev.initGui(settings.name);
-    //dev.initSettings(settings);
-    fluid.createGUI(dev.gui);
-    dev.createCheckBoxGui(compositions, 'Compositions');
-    dev.createCheckBoxGui(palettes, 'Palettes');
+    initDevMode();
   }
 
-  initShared();
+  core.initSketch();
   fluid.init();
 
   const initSettings = Object.assign({}, settings, {
@@ -61,6 +56,14 @@ function setup() {
   addEventListeners();
 
   fxpreview();
+}
+
+function initDevMode() {
+  dev.initGui(settings.name);
+  //dev.initSettings(settings);
+  fluid.createGUI(dev.gui);
+  dev.createCheckBoxGui(compositions, 'Compositions');
+  dev.createCheckBoxGui(palettes, 'Palettes');
 }
 
 function createScene() {
@@ -129,22 +132,46 @@ function onCreateLayer(event) {
 }
 
 function onInitLayerOptions(event) {
-  const {options} = event.detail;
-  options.noiseZoom = FXRand.num(400, 2000);
-  options.colorW = features.colorW;  //features.colorW / 5.0;
+  const {layerOpts} = event.detail;
+  layerOpts.noiseZoom = FXRand.num(400, 1700);
+  layerOpts.noiseMin = options.noiseMin;
+  layerOpts.noiseMax = options.noiseMax;
+  layerOpts.colorW = features.colorW;  //features.colorW / 5.0;
+  switch (comp) {
+    case 'sea':
+      layerOpts.blendModePass = 0;
+      layerOpts.fluidZoom = FXRand.exp(0.9, 1.4);
+      break;
+    case 'desert':
+      layerOpts.blendModePass = FXRand.choice([0, 1]);
+      layerOpts.fluidZoom = FXRand.exp(0.1, 0.8);
+      break;
+    case 'glitch':
+      layerOpts.blendModePass = 1;
+      layerOpts.fluidZoom = FXRand.exp(1.5, 5.0);
+      break;
+    default:
+      layerOpts.blendModePass = FXRand.choice([0, 1]);
+      break;
+  }
 }
 
 function onApplyLayerOptions(event) {
   const {layer, options} = event.detail;
-  layer.fluidPass.material.fragmentShader = comp === 'pnoise' ? pnoiseFluidPassFrag : snoiseFluidPassFrag;
   layer.fluidPass.material.uniforms.uNoiseZoom = {value: options.noiseZoom};
   layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
   layer.fluidPass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
-  if (comp === 'pnoise') {
-    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 10.0};
-  }
-  else {
-    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
+  layer.fluidPass.material.uniforms.uNoiseMin = {value: options.noiseMin};
+  layer.fluidPass.material.uniforms.uNoiseMax = {value: options.noiseMax};
+  switch (comp) {
+    case 'pnoise':
+      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 10.0};
+      layer.fluidPass.material.fragmentShader = pnoiseFluidPassFrag;
+      break;
+    default:
+      layer.fluidPass.material.fragmentShader = snoiseFluidPassFrag;
+      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
+      break;
   }
 }
 

@@ -13,7 +13,7 @@ Object.assign(options, {
     minLayers: 2,
     maxLayers: 2,
     opacity: 1.0,
-    minDt: 0.1,
+    minDt: 0.10,
     maxDt: 0.25,
     onClick: 'change',
     onChange: 'update',
@@ -21,11 +21,15 @@ Object.assign(options, {
     snapBlending: 3,
     snapOpacity: 3,
     maxChanges: 0,
+    noiseMin: 0.2,
+    noiseMax: 1.0,
 });
 
 Object.assign(compositions, {
+    sea: true,
+    desert: true,
+    glitch: true,
     pnoise: false,
-    snoise: true,
     box: false,
 });
 
