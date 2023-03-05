@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import * as core from "fxhash_lib/core";
-import {cam, renderer, scene, settings, options, features} from "fxhash_lib/core";
+import {cam, renderer, scene, settings, options, compositions, palettes, features} from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 //import * as lights from "fxhash_lib/lights";
 import * as css2D from "fxhash_lib/css2D";
 import {devMode, effectOptions, lightOptions} from "./config"
-import {createGUI} from "./gui";
 import * as fluid from "fxhash_lib/fluid";
 import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
@@ -23,7 +22,9 @@ function setup() {
   if (devMode) {
     dev.initGui(settings.name);
     //dev.initSettings(settings);
-    createGUI(dev.gui);
+    fluid.createGUI(dev.gui);
+    dev.createCheckBoxGui(compositions, 'Compositions');
+    dev.createCheckBoxGui(palettes, 'Palettes');
   }
 
   initShared();
