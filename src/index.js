@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as core from "fxhash_lib/core";
-import {cam, renderer, scene, settings, options, compositions, palettes, features, comp, palette} from "fxhash_lib/core";
+import {cam, renderer, scene, settings, options, compositions, palettes, features, comp} from "fxhash_lib/core";
 import * as dev from "fxhash_lib/dev";
 import * as effects from "fxhash_lib/effects";
 //import * as lights from "fxhash_lib/lights";
@@ -11,6 +11,7 @@ import * as mats from "fxhash_lib/materials";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import * as FXRand from "fxhash_lib/random";
+import * as utils from "fxhash_lib/utils";
 import {pnoiseFluidPassFrag, snoiseFluidPassFrag} from "fxhash_lib/shaders/fluid/pass";
 
 let materialFBO;
@@ -137,16 +138,24 @@ function onInitLayerOptions(event) {
   layerOpts.noiseMin = options.noiseMin;
   layerOpts.noiseMax = options.noiseMax;
   layerOpts.colorW = features.colorW;  //features.colorW / 5.0;
-  switch (comp) {
+  const comps = core.getIncludedComps();
+  const layerComp = i > 0 ? FXRand.choice(comps.length > 1 ? utils.removeFromArray(comps, comp) : comps) : comp;
+  switch (layerComp) {
     case 'sea':
       layerOpts.blendModePass = 0;
       layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = FXRand.exp(0.9, 1.4);
       break;
-    case 'desert':
+    case 'wind':
       layerOpts.blendModePass = 0;
       layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
-      layerOpts.fluidZoom = FXRand.exp(0.1, 0.3);
+      layerOpts.fluidZoom = -FXRand.exp(0.1, 0.3);
+      break;
+    case 'sand':
+      layerOpts.blendModePass = 0;
+      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
+      layerOpts.fluidZoom = -FXRand.exp(0.1, 0.3);
+      layerOpts.fluidZoom2 = FXRand.exp(0.1, 0.3);
       break;
     case 'glitch':
       layerOpts.blendModePass = 1;
@@ -174,7 +183,7 @@ function onApplyLayerOptions(event) {
       break;
     default:
       layer.fluidPass.material.fragmentShader = snoiseFluidPassFrag;
-      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
+      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.00025};
       break;
   }
 }

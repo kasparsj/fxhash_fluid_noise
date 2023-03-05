@@ -23,11 +23,13 @@ Object.assign(options, {
     maxChanges: 0,
     noiseMin: 0.2,
     noiseMax: 1.0,
+    fluidDiv: 1.0,
 });
 
 Object.assign(compositions, {
     sea: true,
-    desert: true,
+    sand: true,
+    wind: true,
     glitch: true,
     pnoise: false,
     box: false,
