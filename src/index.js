@@ -142,7 +142,12 @@ function onApplyLayerOptions(event) {
   layer.fluidPass.material.uniforms.uNoiseZoom = {value: options.noiseZoom};
   layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
   layer.fluidPass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
-  layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
+  if (comp === 'pnoise') {
+    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 10.0};
+  }
+  else {
+    layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.0005};
+  }
 }
 
 function draw(event) {
