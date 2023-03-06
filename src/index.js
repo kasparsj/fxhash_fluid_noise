@@ -86,9 +86,9 @@ function createDefaultComp() {
   // scene.add(box);
 
   fluid.createLayers();
-  // if (!options.snapOverlay && palette !== 'Black&White') {
-  //   scene.background = fluid.colors[0];
-  // }
+  if (options.background) {
+    scene.background = fluid.colors[0];
+  }
   fluid.createSnapOverlay();
   if (options.maxChanges > 0) {
     fluid.scheduleChange();
@@ -134,48 +134,52 @@ function onCreateLayer(event) {
 
 function onInitLayerOptions(event) {
   const {i, layerOpts} = event.detail;
+  layerOpts.opacity = 0.96;
+  layerOpts.diss = 0.0005;
   layerOpts.noiseZoom = FXRand.num(400, 1700);
   layerOpts.noiseMin = options.noiseMin;
   layerOpts.noiseMax = options.noiseMax;
   layerOpts.colorW = features.colorW;  //features.colorW / 5.0;
+  if (options.background) {
+    layerOpts.blendModeView = FXRand.choice([0, 1, 2, 3, 4, 5]);
+  }
+  else {
+    layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
+  }
   const comps = core.getIncludedComps();
   const layerComp = i > 0 ? FXRand.choice(comps.length > 1 ? utils.removeFromArray(comps, comp) : comps) : comp;
   switch (layerComp) {
     case 'sea':
-      layerOpts.blendModePass = 0;
-      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = FXRand.exp(0.9, 1.4);
       break;
-    case 'wind':
-      layerOpts.blendModePass = 0;
-      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
-      layerOpts.fluidZoom = -FXRand.exp(0.1, 0.3);
+    case 'stone':
+      layerOpts.fluidZoom = -FXRand.num(0.3, 0.6);
+      layerOpts.K = layerOpts.K * 1.5;
+      // todo: only if inv?
+      // layerOpts.noiseMin = i === 0 ? 0.5 : 0;
       break;
+    case 'cells':
+      layerOpts.fluidZoom = -FXRand.num(0.3, 0.6) * 10.0;
+      layerOpts.K = layerOpts.K * 2.0;
+        break;
     case 'sand':
-      layerOpts.blendModePass = 0;
-      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = -FXRand.exp(0.1, 0.3);
       layerOpts.fluidZoom2 = FXRand.exp(0.1, 0.3);
       break;
     case 'glitch':
       layerOpts.blendModePass = 1;
-      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       layerOpts.fluidZoom = FXRand.exp(1.5, 5.0);
-      break;
-    default:
-      layerOpts.blendModePass = FXRand.choice([0, 1]);
-      layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
       break;
   }
 }
 
 function onApplyLayerOptions(event) {
-  const {layer, options} = event.detail;
-  layer.fluidPass.material.uniforms.uNoiseZoom = {value: options.noiseZoom};
+  const {i, layer, layerOpts} = event.detail;
+  layer.fluidPass.material.uniforms.uNoiseZoom = {value: layerOpts.noiseZoom};
   layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
   layer.fluidPass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
-  layer.fluidPass.material.uniforms.uNoiseMin = {value: options.noiseMin};
-  layer.fluidPass.material.uniforms.uNoiseMax = {value: options.noiseMax};
+  layer.fluidPass.material.uniforms.uNoiseMin = {value: layerOpts.noiseMin};
+  layer.fluidPass.material.uniforms.uNoiseMax = {value: layerOpts.noiseMax};
   switch (comp) {
     case 'pnoise':
       layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 10.0};

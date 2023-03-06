@@ -12,7 +12,6 @@ Object.assign(settings, {
 Object.assign(options, {
     minLayers: 2,
     maxLayers: 2,
-    opacity: 1.0,
     minDt: 0.15,
     maxDt: 0.25,
     onClick: 'change',
@@ -24,13 +23,15 @@ Object.assign(options, {
     noiseMin: 0.2,
     noiseMax: 1.0,
     fluidDiv: 1.0,
+    background: true,
 });
 
 Object.assign(compositions, {
     sea: true,
     sand: true,
-    wind: true,
-    glitch: true,
+    stone: true,
+    cells: true,
+    glitch: false,
     pnoise: false,
     box: false,
 });
