@@ -12,6 +12,7 @@ import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import * as FXRand from "fxhash_lib/random";
 import * as utils from "fxhash_lib/utils";
+import * as livecoding from "fxhash_lib/livecoding";
 import {pnoiseFluidPassFrag, snoiseFluidPassFrag} from "fxhash_lib/shaders/fluid/pass";
 
 let materialFBO;
@@ -45,7 +46,7 @@ function setup() {
 
   window.addEventListener('fluid.createLayer', onCreateLayer);
   window.addEventListener('fluid.initLayerOptions', onInitLayerOptions);
-  window.addEventListener('fluid.applyLayerOptions', onApplyLayerOptions)
+  window.addEventListener('fluid.applyPassOptions', onApplyPassOptions)
 
   createScene();
 
@@ -57,6 +58,8 @@ function setup() {
   addEventListeners();
 
   fxpreview();
+
+  //livecoding.init();
 }
 
 function initDevMode() {
@@ -134,60 +137,67 @@ function onCreateLayer(event) {
 
 function onInitLayerOptions(event) {
   const {i, layerOpts} = event.detail;
+
   layerOpts.opacity = 0.96;
-  layerOpts.diss = 0.0005;
-  layerOpts.noiseZoom = FXRand.num(400, 1700);
-  layerOpts.noiseMin = options.noiseMin;
-  layerOpts.noiseMax = options.noiseMax;
   layerOpts.colorW = features.colorW;  //features.colorW / 5.0;
   if (options.background) {
-    layerOpts.blendModeView = FXRand.choice([0, 1, 2, 3, 4, 5]);
+    // todo: 1 and 5 are almost completely similar (maybe choose one)
+    const lastLayerBlendmodes = i === 0 ? [0, 1, 2, 3] : [0, 1, 2, 3, 5];
+    layerOpts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 3, 5]);
   }
   else {
     layerOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
   }
+
   const comps = core.getIncludedComps();
   const layerComp = i > 0 ? FXRand.choice(comps.length > 1 ? utils.removeFromArray(comps, comp) : comps) : comp;
-  switch (layerComp) {
-    case 'sea':
-      layerOpts.fluidZoom = FXRand.exp(0.9, 1.4);
-      break;
-    case 'stone':
-      layerOpts.fluidZoom = -FXRand.num(0.3, 0.6);
-      layerOpts.K = layerOpts.K * 1.5;
-      // todo: only if inv?
-      // layerOpts.noiseMin = i === 0 ? 0.5 : 0;
-      break;
-    case 'cells':
-      layerOpts.fluidZoom = -FXRand.num(0.3, 0.6) * 10.0;
-      layerOpts.K = layerOpts.K * 2.0;
+  for (let j=0; j<layerOpts.passes.length; j++) {
+    layerOpts.passes[j].diss = 0.0005;
+    layerOpts.passes[j].noiseZoom = FXRand.num(400, 1700);
+    layerOpts.passes[j].noiseMin = options.noiseMin;
+    layerOpts.passes[j].noiseMax = options.noiseMax;
+    switch (layerComp) {
+      case 'sea':
+        layerOpts.passes[j].fluidZoom = FXRand.exp(0.9, 1.4);
         break;
-    case 'sand':
-      layerOpts.fluidZoom = -FXRand.exp(0.1, 0.3);
-      layerOpts.fluidZoom2 = FXRand.exp(0.1, 0.3);
-      break;
-    case 'glitch':
-      layerOpts.blendModePass = 1;
-      layerOpts.fluidZoom = FXRand.exp(1.5, 5.0);
-      break;
+      case 'stone':
+        // todo: maybe too fluid?
+        layerOpts.passes[j].fluidZoom = -FXRand.num(0.3, 0.6);
+        layerOpts.passes[j].K = layerOpts.passes[j].K * 1.5;
+        // todo: only if inv?
+        // layerOpts.passes[j].noiseMin = i === 0 ? 0.5 : 0;
+        break;
+      case 'cells':
+        layerOpts.passes[j].fluidZoom = -FXRand.num(0.3, 0.6) * 10.0;
+        layerOpts.passes[j].K = layerOpts.passes[j].K * 2.0;
+        break;
+      case 'sand':
+        layerOpts.passes[j].fluidZoom = -FXRand.exp(0.1, 0.3);
+        layerOpts.passes[j].fluidZoom2 = FXRand.exp(0.1, 0.3);
+        break;
+      case 'glitch':
+        layerOpts.passes[j].blendModePass = 1;
+        layerOpts.passes[j].fluidZoom = FXRand.exp(1.5, 5.0);
+        break;
+    }
   }
 }
 
-function onApplyLayerOptions(event) {
-  const {i, layer, layerOpts} = event.detail;
-  layer.fluidPass.material.uniforms.uNoiseZoom = {value: layerOpts.noiseZoom};
-  layer.fluidPass.material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
-  layer.fluidPass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
-  layer.fluidPass.material.uniforms.uNoiseMin = {value: layerOpts.noiseMin};
-  layer.fluidPass.material.uniforms.uNoiseMax = {value: layerOpts.noiseMax};
+function onApplyPassOptions(event) {
+  const {i, j, layer, passOpts} = event.detail;
+  layer.composer.passes[j].material.uniforms.uNoiseZoom = {value: passOpts.noiseZoom};
+  layer.composer.passes[j].material.uniforms.uNoiseOffset = {value: new THREE.Vector2(FXRand.num(0, 1000), FXRand.num(0, 1000))};
+  layer.composer.passes[j].material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
+  layer.composer.passes[j].material.uniforms.uNoiseMin = {value: passOpts.noiseMin};
+  layer.composer.passes[j].material.uniforms.uNoiseMax = {value: passOpts.noiseMax};
   switch (comp) {
     case 'pnoise':
-      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 10.0};
-      layer.fluidPass.material.fragmentShader = pnoiseFluidPassFrag;
+      layer.composer.passes[j].material.uniforms.uNoiseSpeed = {value: 10.0};
+      layer.composer.passes[j].material.fragmentShader = pnoiseFluidPassFrag;
       break;
     default:
-      layer.fluidPass.material.fragmentShader = snoiseFluidPassFrag;
-      layer.fluidPass.material.uniforms.uNoiseSpeed = {value: 0.00025};
+      layer.composer.passes[j].material.fragmentShader = snoiseFluidPassFrag;
+      layer.composer.passes[j].material.uniforms.uNoiseSpeed = {value: 0.0001};
       break;
   }
 }

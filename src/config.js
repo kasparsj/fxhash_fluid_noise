@@ -12,6 +12,8 @@ Object.assign(settings, {
 Object.assign(options, {
     minLayers: 2,
     maxLayers: 2,
+    minPasses: 2,
+    maxPasses: 2,
     minDt: 0.15,
     maxDt: 0.25,
     onClick: 'change',
@@ -78,7 +80,7 @@ export const effectOptions = {
     dotScale: 0,
     //rgbShift: 0,
     sepia: 0,
-    fxaa: false,
+    fxaa: true,
     //bleach: 0,
     //colorify: false,
     //pixelate: false,
