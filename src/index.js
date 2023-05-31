@@ -221,7 +221,7 @@ function draw(event) {
     materialFBO.render();
   }
   else {
-    layers.render();
+    layers.renderAt(24, event);
   }
   core.render();
 }
