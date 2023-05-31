@@ -26,6 +26,7 @@ Object.assign(options, {
     noiseMax: 1.0,
     fluidDiv: 1.0,
     background: true,
+    usePipeline: true,
 });
 
 Object.assign(compositions, {
