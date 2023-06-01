@@ -46,8 +46,8 @@ function setup() {
   core.lookAt(new THREE.Vector3(0, 0, 0));
 
   window.addEventListener('layers.create', onCreateLayer);
-  window.addEventListener('fluid.initViewOptions', onInitViewOptions);
-  window.addEventListener('fluid.createView', onCreateView);
+  window.addEventListener('fluid.initOptions', onInitFluidOptions);
+  window.addEventListener('fluid.create', onCreateFluid);
   window.addEventListener('fluid.applyPassOptions', onApplyPassOptions)
 
   createScene();
@@ -113,7 +113,7 @@ function createBoxComp() {
   //fluid.createLayer();
 
   const mat = mats.fluidViewUV({
-    blending: fluid.viewOptions[0].blendModeView,
+    blending: fluid.fluids[0].blendModeView,
   });
 
   const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
@@ -126,9 +126,9 @@ function createBoxComp() {
   }, box.material);
 
   const fluidPass = new FluidPass(mats.fluidPass({
-    blending: fluid.viewOptions[0].blendModePass,
+    blending: fluid.fluids[0].blendModePass,
     transparent: true,
-  }), fluid.viewOptions[0]);
+  }), fluid.fluids[0]);
 
   materialFBO.composer.addPass(fluidPass);
 }
@@ -140,56 +140,57 @@ function onCreateLayer(event) {
   }
 }
 
-function onCreateView(event) {
-  const {view, i} = event.detail;
+function onCreateFluid(event) {
+  const {i} = event.detail;
   if (devMode) {
-    fluid.createViewGUI(dev.gui, i);
+    fluid.createFluidGUI(dev.gui, i);
   }
 }
 
-function onInitViewOptions(event) {
-  const {i, viewOpts} = event.detail;
+function onInitFluidOptions(event) {
+  const {opts, i} = event.detail;
 
-  viewOpts.opacity = 0.96;
-  viewOpts.colorW = features.colorW;  //features.colorW / 5.0;
+  //viewOpts.opacity = i > 0 ? 0.96 : 1.0;
+  opts.opacity = 1.0;
+  opts.colorW = features.colorW;  //features.colorW / 5.0;
   if (options.background) {
     // todo: 1 and 5 are almost completely similar (maybe choose one)
-    const lastLayerBlendmodes = i === 0 ? [0, 1, 2, 3] : [0, 1, 2, 3, 5];
-    viewOpts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 3, 5]);
+    const lastLayerBlendmodes = i === 0 ? [0, 1, 2] : [0, 1, 2, 5];
+    opts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 3, 5]);
   }
   else {
-    viewOpts.blendModeView = FXRand.choice(i > 0 ? [2, 3, 5] : [2, 5]);
+    opts.blendModeView = FXRand.choice([1, 2, 5]);
   }
 
   const comps = core.getIncludedComps();
   const layerComp = i > 0 ? FXRand.choice(comps.length > 1 ? utils.removeFromArray(comps, comp) : comps) : comp;
-  for (let j=0; j<viewOpts.passes.length; j++) {
-    viewOpts.passes[j].diss = 0.0005;
-    viewOpts.passes[j].noiseZoom = FXRand.num(400, 1700);
-    viewOpts.passes[j].noiseMin = options.noiseMin;
-    viewOpts.passes[j].noiseMax = options.noiseMax;
+  for (let j=0; j<opts.passOptions.length; j++) {
+    opts.passOptions[j].diss = 0.0005;
+    opts.passOptions[j].noiseZoom = FXRand.num(400, 1700);
+    opts.passOptions[j].noiseMin = options.noiseMin;
+    opts.passOptions[j].noiseMax = options.noiseMax;
     switch (layerComp) {
       case 'sea':
-        viewOpts.passes[j].fluidZoom = FXRand.exp(0.9, 1.4);
+        opts.passOptions[j].fluidZoom = FXRand.exp(0.9, 1.4);
         break;
       case 'stone':
         // todo: maybe too fluid?
-        viewOpts.passes[j].fluidZoom = -FXRand.num(0.3, 0.6);
-        viewOpts.passes[j].K = viewOpts.passes[j].K * 1.5;
+        opts.passOptions[j].fluidZoom = -FXRand.num(0.3, 0.6);
+        opts.passOptions[j].K = opts.passOptions[j].K * 1.5;
         // todo: only if inv?
-        // viewOpts.passes[j].noiseMin = i === 0 ? 0.5 : 0;
+        // opts.passOptions[j].noiseMin = i === 0 ? 0.5 : 0;
         break;
       case 'cells':
-        viewOpts.passes[j].fluidZoom = -FXRand.num(0.3, 0.6) * 10.0;
-        viewOpts.passes[j].K = viewOpts.passes[j].K * 2.0;
+        opts.passOptions[j].fluidZoom = -FXRand.num(0.3, 0.6) * 10.0;
+        opts.passOptions[j].K = opts.passOptions[j].K * 2.0;
         break;
       case 'sand':
-        viewOpts.passes[j].fluidZoom = -FXRand.exp(0.1, 0.3);
-        viewOpts.passes[j].fluidZoom2 = FXRand.exp(0.1, 0.3);
+        opts.passOptions[j].fluidZoom = -FXRand.exp(0.1, 0.3);
+        opts.passOptions[j].fluidZoom2 = FXRand.exp(0.1, 0.3);
         break;
       case 'glitch':
-        viewOpts.passes[j].blendModePass = 1;
-        viewOpts.passes[j].fluidZoom = FXRand.exp(1.5, 5.0);
+        opts.passOptions[j].blendModePass = 1;
+        opts.passOptions[j].fluidZoom = FXRand.exp(1.5, 5.0);
         break;
     }
   }
@@ -202,6 +203,7 @@ function onApplyPassOptions(event) {
   pass.material.uniforms.uNoiseMove = {value: new THREE.Vector2(0.0001, 0)};
   pass.material.uniforms.uNoiseMin = {value: passOpts.noiseMin};
   pass.material.uniforms.uNoiseMax = {value: passOpts.noiseMax};
+  // switch (FXRand.choice(['snoise', 'pnoise'])) {
   switch (comp) {
     case 'pnoise':
       pass.material.uniforms.uNoiseSpeed = {value: 10.0};
