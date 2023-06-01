@@ -90,12 +90,7 @@ function createDefaultComp() {
   // box.rotation.set(90, 0, 180);
   // scene.add(box);
 
-  if (options.usePipeline) {
-    fluid.createPipeline();
-  }
-  else {
-    fluid.createLayers();
-  }
+  fluid.createLayers();
   if (options.background) {
     scene.background = fluid.colors[0];
   }
@@ -156,20 +151,21 @@ function onInitFluidOptions(event) {
   if (options.background) {
     // todo: 1 and 5 are almost completely similar (maybe choose one)
     const lastLayerBlendmodes = i === 0 ? [0, 1, 2] : [0, 1, 2, 5];
-    opts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 3, 5]);
+    opts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 5]);
   }
   else {
     opts.blendModeView = FXRand.choice([1, 2, 5]);
   }
 
   const comps = core.getIncludedComps();
-  const layerComp = i > 0 ? FXRand.choice(comps.length > 1 ? utils.removeFromArray(comps, comp) : comps) : comp;
   for (let j=0; j<opts.passOptions.length; j++) {
+    const passComp = FXRand.choice(comps);
+    opts.passOptions[j].comp = passComp;
     opts.passOptions[j].diss = 0.0005;
     opts.passOptions[j].noiseZoom = FXRand.num(400, 1700);
     opts.passOptions[j].noiseMin = options.noiseMin;
     opts.passOptions[j].noiseMax = options.noiseMax;
-    switch (layerComp) {
+    switch (passComp) {
       case 'sea':
         opts.passOptions[j].fluidZoom = FXRand.exp(0.9, 1.4);
         break;

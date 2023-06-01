@@ -10,10 +10,10 @@ Object.assign(settings, {
 });
 
 Object.assign(options, {
-    minLayers: 2,
-    maxLayers: 2,
-    minPasses: 2,
-    maxPasses: 2,
+    minLayers: 4,
+    maxLayers: 4,
+    minPasses: 1,
+    maxPasses: 1,
     minDt: 0.15,
     maxDt: 0.25,
     onClick: 'change',
@@ -26,7 +26,6 @@ Object.assign(options, {
     noiseMax: 1.0,
     fluidDiv: 1.0,
     background: true,
-    usePipeline: true,
 });
 
 Object.assign(compositions, {
