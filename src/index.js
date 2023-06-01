@@ -12,7 +12,6 @@ import * as layers from "fxhash_lib/layers";
 import {MaterialFBO} from "fxhash_lib/postprocessing/MaterialFBO";
 import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import * as FXRand from "fxhash_lib/random";
-import * as utils from "fxhash_lib/utils";
 import * as livecoding from "fxhash_lib/livecoding";
 import {pnoiseFluidPassFrag, snoiseFluidPassFrag} from "fxhash_lib/shaders/fluid/pass";
 
@@ -47,7 +46,6 @@ function setup() {
 
   window.addEventListener('layers.create', onCreateLayer);
   window.addEventListener('fluid.initOptions', onInitFluidOptions);
-  window.addEventListener('fluid.create', onCreateFluid);
   window.addEventListener('fluid.applyPassOptions', onApplyPassOptions)
 
   createScene();
@@ -107,9 +105,7 @@ function createBoxComp() {
   // todo: fix!
   //fluid.createLayer();
 
-  const mat = mats.fluidViewUV({
-    blending: fluid.fluids[0].blendModeView,
-  });
+  const mat = mats.fluidViewUV({});
 
   const box = new THREE.Mesh(new THREE.BoxGeometry(500, 500, 500), mat);
   scene.add(box);
@@ -121,7 +117,6 @@ function createBoxComp() {
   }, box.material);
 
   const fluidPass = new FluidPass(mats.fluidPass({
-    blending: fluid.fluids[0].blendModePass,
     transparent: true,
   }), fluid.fluids[0]);
 
@@ -129,32 +124,32 @@ function createBoxComp() {
 }
 
 function onCreateLayer(event) {
-  const {layer} = event.detail;
+  const {layer, i} = event.detail;
+
+  layer.blendMode = 0;
+  if (i === (features.layers-1) && features.layers > 2) {
+    //layers.layers[i].blendMode = blendModes.NORMAL;
+    layers.layers[i].blendMode = 17;
+  }
+
   if (comp !== 'box') {
     scene.add(layer.mesh);
   }
-}
 
-function onCreateFluid(event) {
-  const {i} = event.detail;
   if (devMode) {
-    fluid.createFluidGUI(dev.gui, i);
+    fluid.createLayerGUI(dev.gui, i);
   }
 }
 
 function onInitFluidOptions(event) {
   const {opts, i} = event.detail;
 
-  //viewOpts.opacity = i > 0 ? 0.96 : 1.0;
+  //opts.opacity = i > 0 ? 0.96 : 1.0;
   opts.opacity = 1.0;
-  opts.colorW = features.colorW;  //features.colorW / 5.0;
-  if (options.background) {
-    // todo: 1 and 5 are almost completely similar (maybe choose one)
-    const lastLayerBlendmodes = i === 0 ? [0, 1, 2] : [0, 1, 2, 5];
-    opts.blendModeView = FXRand.choice((i+1) === features.layers ? lastLayerBlendmodes : [0, 1, 2, 5]);
-  }
-  else {
-    opts.blendModeView = FXRand.choice([1, 2, 5]);
+
+  if (i === (features.layers-1)) {
+    opts.viewShader = 'velMultFluidViewFrag';
+    opts.invert = false;
   }
 
   const comps = core.getIncludedComps();
@@ -185,7 +180,6 @@ function onInitFluidOptions(event) {
         opts.passOptions[j].fluidZoom2 = FXRand.exp(0.1, 0.3);
         break;
       case 'glitch':
-        opts.passOptions[j].blendModePass = 1;
         opts.passOptions[j].fluidZoom = FXRand.exp(1.5, 5.0);
         break;
     }
