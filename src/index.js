@@ -224,6 +224,11 @@ function onKeyDown(event) {
   }
 }
 
+function onResize(event) {
+  //layers.resize(window.innerWidth*2, window.innerHeight*2);
+  layers.resize(4967, 7016);
+}
+
 function onDblClick(event) {
   if (devMode && !dev.isGui(event.target)) {
     document.location.reload();
@@ -234,7 +239,7 @@ function addEventListeners() {
   window.addEventListener('core.render', draw);
   renderer.domElement.addEventListener('click', fluid.onClick);
   document.addEventListener("keydown", onKeyDown, false);
-  window.addEventListener("resize", layers.onResize);
+  window.addEventListener("resize", onResize);
   if (devMode) {
     window.addEventListener("dblclick", onDblClick);
   }
