@@ -26,6 +26,7 @@ Object.assign(options, {
     noiseMax: 1.0,
     fluidDiv: 1.0,
     background: true,
+    pixelRatio: 3,
 });
 
 Object.assign(compositions, {

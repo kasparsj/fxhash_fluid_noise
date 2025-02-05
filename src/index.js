@@ -14,6 +14,7 @@ import {FluidPass} from "fxhash_lib/postprocessing/FluidPass";
 import * as FXRand from "fxhash_lib/random";
 import * as livecoding from "fxhash_lib/livecoding";
 import {pnoiseFluidPassFrag, snoiseFluidPassFrag} from "fxhash_lib/shaders/fluid/pass";
+import {addVideoFrame, isRecordingVideo} from "fxhash_lib/export";
 
 let materialFBO;
 
@@ -209,13 +210,18 @@ function onApplyPassOptions(event) {
 function draw(event) {
   core.update();
   dev.update();
+
+  const newFrame = core.isNewFrame(24, event);
   if (comp === 'box') {
     materialFBO.render();
   }
-  else {
-    layers.renderAt(24, event);
+  else if (newFrame) {
+    layers.render();
   }
   core.render();
+  if (newFrame && isRecordingVideo()) {
+    addVideoFrame();
+  }
 }
 
 function onKeyDown(event) {
@@ -225,8 +231,9 @@ function onKeyDown(event) {
 }
 
 function onResize(event) {
-  //layers.resize(window.innerWidth*2, window.innerHeight*2);
-  layers.resize(4967, 7016);
+  const w = window.innerWidth - (window.innerWidth % 2);
+  const h = window.innerHeight - (window.innerHeight % 2);
+  layers.resize(w, h, options.pixelRatio);
 }
 
 function onDblClick(event) {
@@ -240,6 +247,7 @@ function addEventListeners() {
   renderer.domElement.addEventListener('click', fluid.onClick);
   document.addEventListener("keydown", onKeyDown, false);
   window.addEventListener("resize", onResize);
+  onResize();
   if (devMode) {
     window.addEventListener("dblclick", onDblClick);
   }
